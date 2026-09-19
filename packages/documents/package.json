@@ -1,0 +1,24 @@
+{
+	"name": "@verifyistic/documents",
+	"version": "0.1.0",
+	"private": true,
+	"type": "module",
+	"description": "Document evidence: source snapshots, PDF rendering (fallback + Chromium seam), manifests, audit certificates, authorized downloads, verification data (doc 08).",
+	"exports": {
+		".": "./src/index.ts"
+	},
+	"scripts": {
+		"typecheck": "tsc --noEmit"
+	},
+	"dependencies": {
+		"@verifyistic/audit": "workspace:*",
+		"@verifyistic/core": "workspace:*",
+		"@verifyistic/database": "workspace:*",
+		"@verifyistic/storage": "workspace:*",
+		"@verifyistic/tenancy": "workspace:*",
+		"kysely": "^0.28.0"
+	},
+	"devDependencies": {
+		"vitest": "^3.0.0"
+	}
+}
