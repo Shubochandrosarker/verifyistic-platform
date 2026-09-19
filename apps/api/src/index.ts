@@ -15,6 +15,11 @@ import { apiKeysRoutes } from "./routes/api-keys.js";
 import { auditRoutes } from "./routes/audit.js";
 import { customersRoutes } from "./routes/customers.js";
 import { organizationRoutes } from "./routes/organization.js";
+import {
+	signerEntryRoutes,
+	signerTransportRoutes,
+} from "./routes/signer-transport.js";
+import { signingErrorStatus, signingRoutes } from "./routes/signing.js";
 import { sitesRoutes } from "./routes/sites.js";
 import { templateErrorStatus, templatesRoutes } from "./routes/templates.js";
 
@@ -44,13 +49,15 @@ export function createApp(services: AppServices) {
 			return fail(c, err);
 		}
 		// Domain errors → API error envelope (404/409/400) without leaking internals.
-		const mapped = templateErrorStatus(err);
+		const mapped = templateErrorStatus(err) ?? signingErrorStatus(err);
 		if (mapped) {
+			const fields = (err as { fields?: Record<string, string[]> }).fields;
 			return c.json(
 				{
 					error: {
 						code: mapped.code,
 						message: err.message,
+						...(fields ? { fields } : {}),
 						request_id: c.get("requestId"),
 					},
 				},
@@ -67,6 +74,9 @@ export function createApp(services: AppServices) {
 
 	app.notFound((c) => failNotFound(c));
 
+	// Hosted signer page — /s/{token} (doc 07 §3), public by design.
+	app.route("/", signerEntryRoutes());
+
 	const v1 = new Hono().basePath("/v1");
 
 	v1.get("/health", (c) =>
@@ -81,6 +91,8 @@ export function createApp(services: AppServices) {
 	v1.route("/sites", sitesRoutes(services));
 	v1.route("/customers", customersRoutes(services));
 	v1.route("/templates", templatesRoutes(services));
+	v1.route("/signing-sessions", signingRoutes(services));
+	v1.route("/sign", signerTransportRoutes(services));
 	v1.route("/api-keys", apiKeysRoutes(services));
 	v1.route("/audit-events", auditRoutes(services));
 
