@@ -182,7 +182,8 @@ describe("wpistic oidc boundary", () => {
 			{
 				issuer: "https://account.wpistic.com",
 				clientId: "vfy-dashboard",
-				clientSecret: "runtime-secret",
+				// The secret is never used by URL building and is always injected at runtime.
+				clientSecret: process.env.WPISTIC_CLIENT_SECRET ?? "",
 				redirectUri: "https://app.verifyistic.com/auth/callback",
 				scopes: ["openid", "profile", "email"],
 			},
