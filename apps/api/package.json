@@ -25,6 +25,7 @@
 		"@verifyistic/storage": "workspace:*",
 		"@verifyistic/tenancy": "workspace:*",
 		"@verifyistic/templates": "workspace:*",
+		"@verifyistic/webhooks": "workspace:*",
 		"hono": "^4.6.0",
 		"kysely": "^0.28.0"
 	},

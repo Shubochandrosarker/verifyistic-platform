@@ -15,6 +15,8 @@ export const ALL_SCOPES: Scope[] = [
 	"signing:write",
 	"documents:read",
 	"documents:write",
+	"webhooks:read",
+	"webhooks:write",
 	"api_keys:read",
 	"api_keys:write",
 	"audit:read",

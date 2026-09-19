@@ -208,7 +208,7 @@ describe("signer transport — token lifecycle (doc 24 §7)", () => {
 
 	it("valid token: open → complete → processing → finalize → completed, with audit chain intact", async () => {
 		const customer = await seededCustomer(orgA);
-		const { token } = await openedSession(orgA, customer.id);
+		const { token, sessionId } = await openedSession(orgA, customer.id);
 
 		const view = (await (
 			await world.app.request(`/v1/sign/${token}/session`)
@@ -237,13 +237,27 @@ describe("signer transport — token lifecycle (doc 24 §7)", () => {
 			data: {
 				status: string;
 				signature_set_hash: string;
-				document_id: string | null;
 			};
 		};
-		// Since Phase 5, completion auto-finalizes into protected artifacts.
-		expect(completed.data.status).toBe("completed");
-		expect(completed.data.document_id).toBeTruthy();
+		// Since Phase 6, finalization runs in the worker: complete leaves `processing`.
+		expect(completed.data.status).toBe("processing");
 		expect(completed.data.signature_set_hash).toMatch(/^[0-9a-f]{64}$/);
+
+		// Worker tick (pdf-finalize job) → session completed + document row exists.
+		const jobs = await world.documents.finalizeProcessing();
+		expect(jobs.finalized).toHaveLength(1);
+		const session = (await world.db
+			.selectFrom("signing_sessions")
+			.selectAll()
+			.where("id", "=", sessionId)
+			.executeTakeFirst())!;
+		expect(session.status).toBe("completed");
+		const doc = await world.db
+			.selectFrom("documents")
+			.selectAll()
+			.where("session_id", "=", sessionId)
+			.executeTakeFirst();
+		expect(doc).toBeDefined();
 
 		const chain = await verifyAuditChain(world.db, "org_a");
 		expect(chain.valid).toBe(true);

@@ -1,0 +1,16 @@
+{
+	"name": "@verifyistic/worker",
+	"version": "0.1.0",
+	"private": true,
+	"type": "module",
+	"description": "Async worker — pdf-finalize, webhook delivery, email pump, retention (Phase 6).",
+	"scripts": {
+		"typecheck": "tsc --noEmit",
+		"dev": "node --import tsx src/node.ts"
+	},
+	"dependencies": {
+		"@verifyistic/api": "workspace:*",
+		"@verifyistic/database": "workspace:*",
+		"kysely": "^0.28.0"
+	}
+}

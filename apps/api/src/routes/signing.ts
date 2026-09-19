@@ -113,6 +113,23 @@ export function signingRoutes(deps: AppServices) {
 					(metadata as Record<string, unknown> | undefined) ?? undefined,
 			},
 		);
+
+		// Email delivery: queue the invitation (worker pumps the outbox — Phase 6).
+		if (session.delivery_method === "email") {
+			const customer = await deps.customers.get(tenant, customer_id);
+			if (customer?.email) {
+				await deps.emailOutbox.enqueue({
+					to: customer.email,
+					template: "signing_session_invitation",
+					payload: {
+						signer_url: `/s/${token}`,
+						business: (await deps.repos.getOrganization(tenant))?.name ?? "",
+						document_title: session.template_version_id,
+					},
+					organizationId: tenant.organizationId,
+				});
+			}
+		}
 		return ok(
 			c,
 			{
