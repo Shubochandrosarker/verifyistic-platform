@@ -107,6 +107,16 @@ export function signerTransportRoutes(deps: AppServices) {
 		);
 		// Finalization moved to the worker (Phase 6, doc 13 §12: no PDFs in the request
 		// path). The session stays `processing` until the worker's finalize job runs.
+		// Webhook fanout: integrators learn the signer finished (doc 05 §5).
+		await deps.webhooks.enqueueEvent(
+			result.session.organization_id,
+			"signing_session.completed",
+			{
+				session_id: result.session.id,
+				status: result.session.status,
+				signature_set_hash: result.signature_set_hash,
+			},
+		);
 		return ok(c, {
 			session_id: result.session.id,
 			status: result.session.status,

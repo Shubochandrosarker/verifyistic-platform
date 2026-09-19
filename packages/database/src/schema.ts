@@ -388,7 +388,23 @@ export interface Database {
 	email_outbox: EmailOutboxTable;
 	checkins: CheckinsTable;
 	qr_targets: QrTargetsTable;
+	idempotency_keys: IdempotencyKeysTable;
 }
+
+export interface IdempotencyKeysTable {
+	id: string;
+	organization_id: string;
+	idempotency_key: string;
+	method: string;
+	path: string;
+	request_fingerprint: string;
+	response_status: number;
+	response_body: string;
+	created_at: string;
+	expires_at: string;
+}
+
+export type IdempotencyKey = Selectable<IdempotencyKeysTable>;
 
 export interface CheckinsTable {
 	id: string;

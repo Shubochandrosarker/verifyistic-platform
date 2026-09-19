@@ -27,6 +27,27 @@ export async function runJobsOnce(
 	);
 	const { finalized } = await services.documents.finalizeProcessing(10);
 	const expiredSessions = await services.signing.expireOverdue();
+
+	// document.generated fanout — integrators learn the protected artifact exists.
+	for (const sessionId of finalized) {
+		const document = await services.db
+			.selectFrom("documents")
+			.select(["id", "organization_id", "document_number"])
+			.where("session_id", "=", sessionId)
+			.executeTakeFirst();
+		if (document) {
+			await services.webhooks.enqueueEvent(
+				document.organization_id,
+				"document.generated",
+				{
+					document_id: document.id,
+					document_number: document.document_number,
+					session_id: sessionId,
+				},
+			);
+		}
+	}
+
 	return {
 		webhookDeliveries,
 		emails,
