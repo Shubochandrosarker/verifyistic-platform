@@ -5,6 +5,10 @@
 export const SCOPES = [
 	"sites:read",
 	"sites:write",
+	"customers:read",
+	"customers:write",
+	"templates:read",
+	"templates:write",
 	"api_keys:read",
 	"api_keys:write",
 	"audit:read",
