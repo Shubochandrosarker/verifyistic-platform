@@ -48,5 +48,6 @@ Requires Node >= 22.13 (node:sqlite) and pnpm 11 (Corepack).
 
 - [x] **Phase 0** — Architecture freeze: ADRs, layout, data model v1, route contract, naming map
 - [x] **Phase 1** — Foundation: migration framework + CLI (checksum-locked journal), Biome coding standards, CI (lint/typecheck/test/secret-scan), local dev run verified, env templates, compose preview, versioning policy
-- [ ] **Phase 2** — Tenancy & authentication (organizations, sites, memberships, API keys, WPistic SSO)
-- [ ] Phase 3–14 — per `21-IMPLEMENTATION-ROADMAP.md`
+- [x] **Phase 2** — Tenancy & authentication: organizations/sites/memberships, tenant-scoped repositories, API keys (`vfy_live_`/`vfy_test_`, hash-at-rest, scopes), role→capability presets, hash-chained audit events, WPistic SSO boundary, cross-tenant authorization matrix green
+- [ ] **Phase 3** — Customers & templates (template schema, draft/publish/version immutability, re-consent, builder MVP)
+- [ ] Phase 4–14 — per `21-IMPLEMENTATION-ROADMAP.md`

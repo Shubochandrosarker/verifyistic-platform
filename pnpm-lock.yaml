@@ -29,12 +29,65 @@ importers:
       '@hono/node-server':
         specifier: ^1.13.0
         version: 1.19.17(hono@4.13.8)
+      '@verifyistic/audit':
+        specifier: workspace:*
+        version: link:../../packages/audit
+      '@verifyistic/auth':
+        specifier: workspace:*
+        version: link:../../packages/auth
       '@verifyistic/core':
         specifier: workspace:*
         version: link:../../packages/core
+      '@verifyistic/database':
+        specifier: workspace:*
+        version: link:../../packages/database
+      '@verifyistic/tenancy':
+        specifier: workspace:*
+        version: link:../../packages/tenancy
       hono:
         specifier: ^4.6.0
         version: 4.13.8
+      kysely:
+        specifier: ^0.28.0
+        version: 0.28.17
+    devDependencies:
+      vitest:
+        specifier: ^3.0.0
+        version: 3.2.7(@types/node@22.20.3)(tsx@4.23.13)
+
+  packages/audit:
+    dependencies:
+      '@verifyistic/core':
+        specifier: workspace:*
+        version: link:../core
+      '@verifyistic/database':
+        specifier: workspace:*
+        version: link:../database
+      '@verifyistic/tenancy':
+        specifier: workspace:*
+        version: link:../tenancy
+      kysely:
+        specifier: ^0.28.0
+        version: 0.28.17
+    devDependencies:
+      vitest:
+        specifier: ^3.0.0
+        version: 3.2.7(@types/node@22.20.3)(tsx@4.23.13)
+
+  packages/auth:
+    dependencies:
+      '@verifyistic/core':
+        specifier: workspace:*
+        version: link:../core
+      '@verifyistic/database':
+        specifier: workspace:*
+        version: link:../database
+      '@verifyistic/tenancy':
+        specifier: workspace:*
+        version: link:../tenancy
+      kysely:
+        specifier: ^0.28.0
+        version: 0.28.17
     devDependencies:
       vitest:
         specifier: ^3.0.0
@@ -64,6 +117,22 @@ importers:
       '@verifyistic/core':
         specifier: workspace:*
         version: link:../core
+    devDependencies:
+      vitest:
+        specifier: ^3.0.0
+        version: 3.2.7(@types/node@22.20.3)(tsx@4.23.13)
+
+  packages/tenancy:
+    dependencies:
+      '@verifyistic/core':
+        specifier: workspace:*
+        version: link:../core
+      '@verifyistic/database':
+        specifier: workspace:*
+        version: link:../database
+      kysely:
+        specifier: ^0.28.0
+        version: 0.28.17
     devDependencies:
       vitest:
         specifier: ^3.0.0
