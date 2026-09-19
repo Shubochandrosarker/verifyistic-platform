@@ -24,8 +24,9 @@ const TRANSITIONS: Readonly<
 > = {
 	created: ["sent", "cancelled", "expired"],
 	sent: ["viewed", "cancelled", "expired"],
-	viewed: ["in_progress", "declined", "expired"],
-	in_progress: ["processing", "declined"],
+	// Cancel remains available to authorized staff until finalization begins (doc 07 §11).
+	viewed: ["in_progress", "declined", "expired", "cancelled"],
+	in_progress: ["processing", "declined", "cancelled"],
 	processing: ["completed", "failed"],
 	completed: [],
 	declined: [],
