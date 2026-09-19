@@ -1,0 +1,16 @@
+{
+	"name": "@verifyistic/core",
+	"version": "0.1.0",
+	"private": true,
+	"type": "module",
+	"description": "Runtime-agnostic domain primitives: ids, canonical hashing, error envelope, signing state machine, signer tokens.",
+	"exports": {
+		".": "./src/index.ts"
+	},
+	"scripts": {
+		"typecheck": "tsc --noEmit"
+	},
+	"devDependencies": {
+		"vitest": "^3.0.0"
+	}
+}

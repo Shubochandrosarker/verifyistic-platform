@@ -1,0 +1,27 @@
+{
+	"name": "verifyistic-platform",
+	"version": "0.1.0",
+	"private": true,
+	"description": "Verifyistic — digital waivers, age verification, e-signatures, and check-in. One domain model, two deployment modes (Cloud / Self-Hosted).",
+	"license": "UNLICENSED",
+	"packageManager": "pnpm@11.22.0",
+	"engines": {
+		"node": ">=22"
+	},
+	"scripts": {
+		"typecheck": "pnpm -r --if-present run typecheck",
+		"test": "vitest run",
+		"test:watch": "vitest",
+		"lint": "biome check .",
+		"lint:fix": "biome check --write .",
+		"migrate": "node --import tsx packages/database/bin/migrate.ts",
+		"dev:api": "pnpm --filter @verifyistic/api dev"
+	},
+	"devDependencies": {
+		"@biomejs/biome": "^1.9.4",
+		"@types/node": "^22.10.0",
+		"tsx": "^4.19.0",
+		"typescript": "^5.6.0",
+		"vitest": "^3.0.0"
+	}
+}

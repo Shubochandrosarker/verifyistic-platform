@@ -1,0 +1,35 @@
+# Dependencies
+node_modules/
+
+# Builds
+dist/
+build/
+*.tsbuildinfo
+
+# Environment & secrets — never commit real values
+.env
+.env.*
+!.env.example
+.dev.vars
+.dev.vars.*
+!.dev.vars.example
+*.pem
+*.key
+
+# Wrangler / Cloudflare local state
+.wrangler/
+wrangler.local.toml
+
+# Security scanner artifacts
+.mimosa/
+
+# Local dev data (sqlite dev database, local documents)
+local/
+
+# Test & coverage
+coverage/
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.idea/
