@@ -20,6 +20,7 @@ import {
 	WebhookService,
 } from "@verifyistic/webhooks";
 import type { Kysely } from "kysely";
+import { IdempotencyStore } from "./lib/idempotency.js";
 
 /**
  * Runtime-injected services (ADR-001): domain packages are runtime-agnostic;
@@ -39,6 +40,7 @@ export interface AppServices {
 	webhooks: WebhookService;
 	emailOutbox: EmailOutbox;
 	emailSender: EmailSender;
+	idempotencyStore: IdempotencyStore;
 }
 
 export interface ServiceOptions {
@@ -89,6 +91,7 @@ export function createServices(
 		fetcher: options.fetcher,
 	});
 	const emailSender = options.emailSender ?? new ConsoleEmailSender();
+	const idempotencyStore = new IdempotencyStore(db);
 	return {
 		db,
 		apiKeys: new ApiKeyService(db),
@@ -103,6 +106,7 @@ export function createServices(
 		webhooks,
 		emailOutbox: new EmailOutbox(db),
 		emailSender,
+		idempotencyStore,
 	};
 }
 

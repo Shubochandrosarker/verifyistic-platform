@@ -1,7 +1,12 @@
 import { ApiError } from "@verifyistic/core";
 import { Hono } from "hono";
+import type { ContentfulStatusCode } from "hono/utils/http-status";
 import type { AppServices } from "../deps.js";
 import { ok } from "../lib/envelope.js";
+import {
+	resolveIdempotency,
+	storeIdempotentResponse,
+} from "../lib/idempotency.js";
 import { requireScope } from "../middleware/auth.js";
 
 /** Public customer shape — DOB and address are readable only through scoped API responses, never public surfaces. */
@@ -42,7 +47,22 @@ export function customersRoutes(deps: AppServices) {
 
 	routes.post("/", async (c) => {
 		const { tenant } = requireScope(c, "customers:write");
-		const body = await c.req.json().catch(() => null);
+		// Read the raw body ONCE — Idempotency-Key fingerprinting and JSON parsing
+		// share it (Request.clone() throws once the stream is disturbed).
+		const rawBody = await c.req.text();
+		const idem = await resolveIdempotency(
+			deps.idempotencyStore,
+			tenant,
+			c,
+			rawBody,
+		);
+		if (idem?.replay) {
+			return c.json(
+				JSON.parse(idem.replay.body),
+				idem.replay.status as ContentfulStatusCode,
+			);
+		}
+		const body = JSON.parse(rawBody) as unknown;
 		if (!body || typeof body !== "object") {
 			throw ApiError.validation("Request body must be a JSON object.");
 		}
@@ -94,7 +114,18 @@ export function customersRoutes(deps: AppServices) {
 			entityId: customer.id,
 			data: { source: customer.source },
 		});
-		return ok(c, toPublicCustomer(customer), { created: true });
+		const envelope = {
+			data: toPublicCustomer(customer),
+			meta: { request_id: c.get("requestId"), created: true },
+		};
+		if (idem)
+			await storeIdempotentResponse(
+				deps.idempotencyStore,
+				idem,
+				200,
+				JSON.stringify(envelope),
+			);
+		return c.json(envelope);
 	});
 
 	routes.get("/", async (c) => {

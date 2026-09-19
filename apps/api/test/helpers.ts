@@ -26,16 +26,33 @@ export const ALL_SCOPES: Scope[] = [
 
 export interface TestWorld extends AppServices {
 	app: Hono;
+	/** Captured webhook deliveries (injected fake fetcher). */
+	webhookCalls: {
+		url: string;
+		headers: Record<string, string>;
+		body: string;
+	}[];
 }
 
-export async function makeTestApp(): Promise<TestWorld> {
+export async function makeTestApp(
+	options: { rateLimits?: { readPerMin: number; writePerMin: number } } = {},
+): Promise<TestWorld> {
 	const db = await createInMemoryDatabase();
+	const webhookCalls: {
+		url: string;
+		headers: Record<string, string>;
+		body: string;
+	}[] = [];
 	const services = createServices(db, {
 		storage: new MemoryStorageProvider(),
 		verifyBaseUrl: "https://verifyistic.com",
+		fetcher: async (url, init) => {
+			webhookCalls.push({ url, headers: init.headers, body: init.body });
+			return { ok: true, status: 200 };
+		},
 	});
-	const app = createApp(services);
-	return { app, ...services };
+	const app = createApp(services, { rateLimits: options.rateLimits });
+	return { app, ...services, webhookCalls };
 }
 
 export interface SeededKey {

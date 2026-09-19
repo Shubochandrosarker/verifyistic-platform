@@ -1,0 +1,16 @@
+{
+	"name": "@verifyistic/sdk",
+	"version": "0.1.0",
+	"private": true,
+	"type": "module",
+	"description": "TypeScript SDK for the Verifyistic v1 API (doc 05 §9): typed client, envelopes, Idempotency-Key handling, webhook signature verification helper.",
+	"exports": {
+		".": "./src/index.ts"
+	},
+	"scripts": {
+		"typecheck": "tsc --noEmit"
+	},
+	"devDependencies": {
+		"vitest": "^3.0.0"
+	}
+}

@@ -10,6 +10,7 @@ import { ApiError, newRequestId } from "@verifyistic/core";
 import { Hono } from "hono";
 import { type AppServices, createServices } from "./deps.js";
 import { fail, failInternal, failNotFound, ok } from "./lib/envelope.js";
+import { OPENAPI_SPEC } from "./lib/openapi.js";
 import { createAuthMiddleware } from "./middleware/auth.js";
 import { apiKeysRoutes } from "./routes/api-keys.js";
 import { auditRoutes } from "./routes/audit.js";
@@ -35,8 +36,40 @@ export { createServices, type AppServices } from "./deps.js";
 const REQUEST_ID_HEADER = "X-Request-ID";
 const REQUEST_ID_PATTERN = /^[\w.-]{8,128}$/;
 
-export function createApp(services: AppServices) {
+export interface RateLimitOptions {
+	readPerMin?: number;
+	writePerMin?: number;
+}
+
+/** In-memory per-key rate limiter (doc 05 §7 baselines). KV-backed in cloud later. */
+function createRateLimiter(limits: Required<RateLimitOptions>) {
+	const buckets = new Map<
+		string,
+		{ reads: number; writes: number; resetAt: number }
+	>();
+	return (c: import("hono").Context, isWrite: boolean): boolean => {
+		const key =
+			c.get("tenant")?.actor.id ?? c.req.header(REQUEST_ID_HEADER) ?? "anon";
+		const nowMinute = Math.floor(Date.now() / 60_000);
+		const bucket = buckets.get(key);
+		if (!bucket || bucket.resetAt !== nowMinute) {
+			buckets.set(key, { reads: 0, writes: 0, resetAt: nowMinute });
+			return true;
+		}
+		const used = isWrite ? bucket.writes++ : bucket.reads++;
+		return used < (isWrite ? limits.writePerMin : limits.readPerMin);
+	};
+}
+
+export function createApp(
+	services: AppServices,
+	options: { rateLimits?: RateLimitOptions } = {},
+) {
 	const app = new Hono();
+	const limiter = createRateLimiter({
+		readPerMin: options.rateLimits?.readPerMin ?? 300,
+		writePerMin: options.rateLimits?.writePerMin ?? 120,
+	});
 
 	// Request id: honor a well-formed client id, else mint one. Always echoed back.
 	app.use("*", async (c, next) => {
@@ -50,6 +83,27 @@ export function createApp(services: AppServices) {
 	});
 
 	app.use("*", createAuthMiddleware(services.apiKeys));
+
+	// Per-key rate limiting (doc 05 §7): reads 300/min, writes 120/min by default.
+	app.use("*", async (c, next) => {
+		const method = c.req.method;
+		if (method === "GET") {
+			if (!limiter(c, false)) {
+				throw new ApiError(
+					"rate_limited",
+					"Rate limit exceeded for reads. Try again shortly.",
+				);
+			}
+		} else if (method !== "OPTIONS") {
+			if (!limiter(c, true)) {
+				throw new ApiError(
+					"rate_limited",
+					"Rate limit exceeded for writes. Try again shortly.",
+				);
+			}
+		}
+		await next();
+	});
 
 	app.onError((err, c) => {
 		if (err instanceof ApiError) {
@@ -78,6 +132,7 @@ export function createApp(services: AppServices) {
 		console.error("unhandled_error", {
 			request_id: c.get("requestId"),
 			message: err.message,
+			stack: err.stack?.split("\n").slice(0, 8).join(" | "),
 		});
 		return failInternal(c);
 	});
@@ -95,6 +150,23 @@ export function createApp(services: AppServices) {
 			service: "verifyistic-api",
 			time: new Date().toISOString(),
 		}),
+	);
+
+	// Machine contract (doc 05 §1) — public.
+	v1.get("/openapi.json", (c) => c.json(OPENAPI_SPEC));
+
+	// Human docs — lightweight index over the machine contract.
+	v1.get("/docs", (c) =>
+		c.html(
+			`<!doctype html><html><head><meta charset="utf-8"><title>Verifyistic API docs</title>` +
+				`<style>body{font-family:-apple-system,sans-serif;max-width:720px;margin:48px auto;padding:0 16px;line-height:1.6}</style>` +
+				`</head><body><h1>Verifyistic API v1</h1>` +
+				`<p>Base: <code>/v1</code> · Auth: <code>Authorization: Bearer vfy_live_…</code></p>` +
+				`<p>Machine contract: <a href="/v1/openapi.json">openapi.json</a> (OpenAPI 3.1).</p>` +
+				`<p>Resources: sites, customers, templates, signing-sessions, documents, checkin, webhooks, api-keys, audit-events.</p>` +
+				`<p>Envelopes: success <code>{"data":…,"meta":{"request_id"}}</code>; error <code>{"error":{code,message,request_id}}</code>.</p>` +
+				`</body></html>`,
+		),
 	);
 
 	v1.route("/organization", organizationRoutes(services));

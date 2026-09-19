@@ -27,7 +27,8 @@
 		"@verifyistic/templates": "workspace:*",
 		"@verifyistic/webhooks": "workspace:*",
 		"hono": "^4.6.0",
-		"kysely": "^0.28.0"
+		"kysely": "^0.28.0",
+		"@verifyistic/sdk": "workspace:*"
 	},
 	"devDependencies": {
 		"vitest": "^3.0.0"
