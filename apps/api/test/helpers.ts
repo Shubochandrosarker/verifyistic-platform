@@ -13,6 +13,8 @@ export const ALL_SCOPES: Scope[] = [
 	"templates:write",
 	"signing:read",
 	"signing:write",
+	"checkin:read",
+	"checkin:write",
 	"documents:read",
 	"documents:write",
 	"webhooks:read",
