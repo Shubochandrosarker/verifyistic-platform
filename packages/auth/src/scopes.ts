@@ -11,6 +11,8 @@ export const SCOPES = [
 	"templates:write",
 	"signing:read",
 	"signing:write",
+	"checkin:read",
+	"checkin:write",
 	"webhooks:read",
 	"webhooks:write",
 	"documents:read",

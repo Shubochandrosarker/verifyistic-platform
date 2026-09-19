@@ -13,6 +13,7 @@ import { fail, failInternal, failNotFound, ok } from "./lib/envelope.js";
 import { createAuthMiddleware } from "./middleware/auth.js";
 import { apiKeysRoutes } from "./routes/api-keys.js";
 import { auditRoutes } from "./routes/audit.js";
+import { checkinRoutes, qrStartRoutes } from "./routes/checkin.js";
 import { customersRoutes } from "./routes/customers.js";
 import {
 	documentsErrorStatus,
@@ -103,13 +104,17 @@ export function createApp(services: AppServices) {
 	v1.route("/signing-sessions", signingRoutes(services));
 	v1.route("/sign", signerTransportRoutes(services));
 	v1.route("/documents", documentsRoutes(services));
-	v1.route("/webhooks", webhookRoutes(services));
+	// Doc 05 mixes prefixes: search lives at /checkin/search, writes at /checkins.
+	// The same router serves both prefixes.
+	v1.route("/checkin", checkinRoutes(services));
+	v1.route("/checkins", checkinRoutes(services));
 	v1.route("/webhooks", webhookRoutes(services));
 	v1.route("/api-keys", apiKeysRoutes(services));
 	v1.route("/audit-events", auditRoutes(services));
 
 	app.route("/", v1);
 	app.route("/", verificationRoutes(services));
+	app.route("/", qrStartRoutes(services));
 
 	return app;
 }

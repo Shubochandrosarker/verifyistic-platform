@@ -386,4 +386,37 @@ export interface Database {
 	webhook_endpoints: WebhookEndpointsTable;
 	webhook_deliveries: WebhookDeliveriesTable;
 	email_outbox: EmailOutboxTable;
+	checkins: CheckinsTable;
+	qr_targets: QrTargetsTable;
 }
+
+export interface CheckinsTable {
+	id: string;
+	organization_id: string;
+	site_id: string | null;
+	customer_id: string;
+	document_id: string | null;
+	source: "front_desk" | "kiosk" | "api" | "qr";
+	checked_in_at: string;
+	/** UTC date (YYYY-MM-DD) — the natural same-day idempotency key. */
+	checked_in_date: string;
+	staff_actor_type: string;
+	staff_actor_id: string;
+	metadata: string | null;
+	created_at: string;
+}
+
+export interface QrTargetsTable {
+	id: string;
+	organization_id: string;
+	site_id: string | null;
+	template_id: string;
+	/** Random URL-safe code — never encodes customer PII (doc 11 §7). */
+	code: string;
+	label: string | null;
+	status: "active" | "disabled";
+	created_at: string;
+}
+
+export type CheckIn = Selectable<CheckinsTable>;
+export type QrTarget = Selectable<QrTargetsTable>;

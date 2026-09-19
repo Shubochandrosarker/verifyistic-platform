@@ -1,6 +1,6 @@
 import { AuditService } from "@verifyistic/audit";
 import { type ApiKeyMode, ApiKeyService, type Scope } from "@verifyistic/auth";
-import { CustomersRepository } from "@verifyistic/customers";
+import { CheckInService, CustomersRepository } from "@verifyistic/customers";
 import type { Database } from "@verifyistic/database";
 import { DocumentService } from "@verifyistic/documents";
 import { SigningService } from "@verifyistic/signing";
@@ -31,6 +31,7 @@ export interface AppServices {
 	repos: TenantRepositories;
 	audit: AuditService;
 	customers: CustomersRepository;
+	checkin: CheckInService;
 	templates: TemplateService;
 	signing: SigningService;
 	documents: DocumentService;
@@ -94,6 +95,7 @@ export function createServices(
 		repos: new TenantRepositories(db),
 		audit,
 		customers,
+		checkin: new CheckInService(db),
 		templates,
 		signing: new SigningService(db, { templates, customers, audit }),
 		documents,
