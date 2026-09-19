@@ -14,6 +14,11 @@ import { createAuthMiddleware } from "./middleware/auth.js";
 import { apiKeysRoutes } from "./routes/api-keys.js";
 import { auditRoutes } from "./routes/audit.js";
 import { customersRoutes } from "./routes/customers.js";
+import {
+	documentsErrorStatus,
+	documentsRoutes,
+	verificationRoutes,
+} from "./routes/documents.js";
 import { organizationRoutes } from "./routes/organization.js";
 import {
 	signerEntryRoutes,
@@ -49,7 +54,10 @@ export function createApp(services: AppServices) {
 			return fail(c, err);
 		}
 		// Domain errors → API error envelope (404/409/400) without leaking internals.
-		const mapped = templateErrorStatus(err) ?? signingErrorStatus(err);
+		const mapped =
+			templateErrorStatus(err) ??
+			signingErrorStatus(err) ??
+			documentsErrorStatus(err);
 		if (mapped) {
 			const fields = (err as { fields?: Record<string, string[]> }).fields;
 			return c.json(
@@ -93,10 +101,12 @@ export function createApp(services: AppServices) {
 	v1.route("/templates", templatesRoutes(services));
 	v1.route("/signing-sessions", signingRoutes(services));
 	v1.route("/sign", signerTransportRoutes(services));
+	v1.route("/documents", documentsRoutes(services));
 	v1.route("/api-keys", apiKeysRoutes(services));
 	v1.route("/audit-events", auditRoutes(services));
 
 	app.route("/", v1);
+	app.route("/", verificationRoutes(services));
 
 	return app;
 }

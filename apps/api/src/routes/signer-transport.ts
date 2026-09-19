@@ -105,11 +105,27 @@ export function signerTransportRoutes(deps: AppServices) {
 				userAgent: c.req.header("User-Agent"),
 			},
 		);
+		// Finalize synchronously for now (Phase 6 moves this to a queue job). A failed
+		// render leaves the session in `processing` for retry — the signer's action
+		// is never lost (doc 18 §10).
+		let document_id: string | null = null;
+		if (!result.already_finalizing) {
+			try {
+				const finalized = await deps.documents.finalize(result.session.id);
+				document_id = finalized?.document.id ?? null;
+			} catch (error) {
+				console.error("finalize_failed", {
+					session_id: result.session.id,
+					message: (error as Error).message,
+				});
+			}
+		}
 		return ok(c, {
 			session_id: result.session.id,
-			status: result.session.status,
+			status: document_id ? "completed" : result.session.status,
 			already_finalizing: result.already_finalizing,
 			signature_set_hash: result.signature_set_hash,
+			document_id,
 		});
 	});
 
