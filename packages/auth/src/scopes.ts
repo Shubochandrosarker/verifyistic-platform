@@ -9,6 +9,8 @@ export const SCOPES = [
 	"customers:write",
 	"templates:read",
 	"templates:write",
+	"signing:read",
+	"signing:write",
 	"api_keys:read",
 	"api_keys:write",
 	"audit:read",

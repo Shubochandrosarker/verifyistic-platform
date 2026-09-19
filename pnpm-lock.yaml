@@ -47,6 +47,9 @@ importers:
       '@verifyistic/firearms':
         specifier: workspace:*
         version: link:../../packages/firearms
+      '@verifyistic/signing':
+        specifier: workspace:*
+        version: link:../../packages/signing
       '@verifyistic/templates':
         specifier: workspace:*
         version: link:../../packages/templates
@@ -148,6 +151,34 @@ importers:
       '@verifyistic/tenancy':
         specifier: workspace:*
         version: link:../tenancy
+    devDependencies:
+      vitest:
+        specifier: ^3.0.0
+        version: 3.2.7(@types/node@22.20.3)(tsx@4.23.13)
+
+  packages/signing:
+    dependencies:
+      '@verifyistic/audit':
+        specifier: workspace:*
+        version: link:../audit
+      '@verifyistic/core':
+        specifier: workspace:*
+        version: link:../core
+      '@verifyistic/customers':
+        specifier: workspace:*
+        version: link:../customers
+      '@verifyistic/database':
+        specifier: workspace:*
+        version: link:../database
+      '@verifyistic/templates':
+        specifier: workspace:*
+        version: link:../templates
+      '@verifyistic/tenancy':
+        specifier: workspace:*
+        version: link:../tenancy
+      kysely:
+        specifier: ^0.28.0
+        version: 0.28.17
     devDependencies:
       vitest:
         specifier: ^3.0.0

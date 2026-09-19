@@ -54,6 +54,8 @@ export interface SignatureBlock {
 	type: "signature";
 	field_key: string;
 	label: string;
+	/** Signatures are mandatory by default; false marks an optional signing field. */
+	required?: boolean;
 }
 
 export type TemplateBlock =
