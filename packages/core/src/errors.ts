@@ -5,6 +5,7 @@ export const ERROR_CODES = [
 	"forbidden",
 	"not_found",
 	"idempotency_conflict",
+	"conflict",
 	"rate_limited",
 	"internal_error",
 ] as const;
@@ -17,6 +18,7 @@ const STATUS_BY_CODE: Record<ErrorCode, number> = {
 	forbidden: 403,
 	not_found: 404,
 	idempotency_conflict: 409,
+	conflict: 409,
 	rate_limited: 429,
 	internal_error: 500,
 };
