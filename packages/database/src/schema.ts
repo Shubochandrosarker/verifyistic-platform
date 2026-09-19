@@ -252,6 +252,68 @@ export type SigningParticipant = Selectable<SigningParticipantsTable>;
 export type FieldResponse = Selectable<FieldResponsesTable>;
 export type Signature = Selectable<SignaturesTable>;
 
+export interface DocumentsTable {
+	id: string;
+	organization_id: string;
+	site_id: string | null;
+	customer_id: string | null;
+	session_id: string | null;
+	template_version_id: string;
+	status: "completed" | "void";
+	/** Human-facing sequential number, e.g. DOC-2026-000001 (org-scoped counter). */
+	document_number: string;
+	signed_at: string;
+	expires_at: string | null;
+	storage_key_signed_pdf: string;
+	storage_key_certificate_pdf: string;
+	storage_key_manifest: string;
+	storage_key_source_snapshot: string;
+	signed_pdf_sha256: string;
+	certificate_sha256: string;
+	/** SHA-256 of the published template schema (frozen at publish). */
+	agreement_sha256: string;
+	signature_set_sha256: string;
+	audit_chain_hash: string;
+	retention_until: string | null;
+	legal_hold: number;
+	voided_at: string | null;
+	voided_by: string | null;
+	void_reason: string | null;
+	created_at: string;
+}
+
+export interface DocumentAccessEventsTable {
+	id: string;
+	organization_id: string;
+	document_id: string;
+	actor_type: string;
+	actor_id: string;
+	action:
+		| "viewed"
+		| "downloaded"
+		| "download_token_issued"
+		| "voided"
+		| "metadata_read";
+	ip: string | null;
+	created_at: string;
+}
+
+export interface DownloadTokensTable {
+	id: string;
+	organization_id: string;
+	document_id: string;
+	token_hash: string;
+	expires_at: string;
+	used_at: string | null;
+	created_by_actor_type: string;
+	created_by_actor_id: string;
+	created_at: string;
+}
+
+export type Document = Selectable<DocumentsTable>;
+export type DocumentAccessEvent = Selectable<DocumentAccessEventsTable>;
+export type DownloadToken = Selectable<DownloadTokensTable>;
+
 export interface Database {
 	organizations: OrganizationsTable;
 	sites: SitesTable;
@@ -266,4 +328,7 @@ export interface Database {
 	signing_participants: SigningParticipantsTable;
 	field_responses: FieldResponsesTable;
 	signatures: SignaturesTable;
+	documents: DocumentsTable;
+	document_access_events: DocumentAccessEventsTable;
+	download_tokens: DownloadTokensTable;
 }
