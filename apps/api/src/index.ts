@@ -3,22 +3,26 @@ import { ApiError, newRequestId } from "@verifyistic/core";
  * Verifyistic API entry — Hono app, runtime-agnostic (ADR-001):
  * runs on Cloudflare Workers (cloud) and Node 22 (self-hosted).
  * Route contract: docs/contracts/api-route-contract-v1.md
+ *
+ * Tenant rule: the organization always comes from the authenticated credential,
+ * never from request payloads (ADR-003). Cross-tenant ids read as not-found.
  */
 import { Hono } from "hono";
+import { type AppServices, createServices } from "./deps.js";
 import { fail, failInternal, failNotFound, ok } from "./lib/envelope.js";
+import { createAuthMiddleware } from "./middleware/auth.js";
+import { apiKeysRoutes } from "./routes/api-keys.js";
+import { auditRoutes } from "./routes/audit.js";
+import { organizationRoutes } from "./routes/organization.js";
+import { sitesRoutes } from "./routes/sites.js";
 
-export type ApiEnv = {
-	Variables: {
-		requestId: string;
-	};
-	// Bindings are added per runtime in Phase 2 (D1, VAULT R2, CACHE KV, QUEUE_*).
-};
+export { createServices, type AppServices } from "./deps.js";
 
 const REQUEST_ID_HEADER = "X-Request-ID";
 const REQUEST_ID_PATTERN = /^[\w.-]{8,128}$/;
 
-export function createApp() {
-	const app = new Hono<ApiEnv>();
+export function createApp(services: AppServices) {
+	const app = new Hono();
 
 	// Request id: honor a well-formed client id, else mint one. Always echoed back.
 	app.use("*", async (c, next) => {
@@ -30,6 +34,8 @@ export function createApp() {
 		await next();
 		c.header(REQUEST_ID_HEADER, c.get("requestId"));
 	});
+
+	app.use("*", createAuthMiddleware(services.apiKeys));
 
 	app.onError((err, c) => {
 		if (err instanceof ApiError) {
@@ -45,7 +51,7 @@ export function createApp() {
 
 	app.notFound((c) => failNotFound(c));
 
-	const v1 = new Hono<ApiEnv>().basePath("/v1");
+	const v1 = new Hono().basePath("/v1");
 
 	v1.get("/health", (c) =>
 		ok(c, {
@@ -54,6 +60,11 @@ export function createApp() {
 			time: new Date().toISOString(),
 		}),
 	);
+
+	v1.route("/organization", organizationRoutes(services));
+	v1.route("/sites", sitesRoutes(services));
+	v1.route("/api-keys", apiKeysRoutes(services));
+	v1.route("/audit-events", auditRoutes(services));
 
 	app.route("/", v1);
 

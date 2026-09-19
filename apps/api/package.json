@@ -14,8 +14,13 @@
 	},
 	"dependencies": {
 		"@hono/node-server": "^1.13.0",
+		"@verifyistic/audit": "workspace:*",
+		"@verifyistic/auth": "workspace:*",
 		"@verifyistic/core": "workspace:*",
-		"hono": "^4.6.0"
+		"@verifyistic/database": "workspace:*",
+		"@verifyistic/tenancy": "workspace:*",
+		"hono": "^4.6.0",
+		"kysely": "^0.28.0"
 	},
 	"devDependencies": {
 		"vitest": "^3.0.0"
