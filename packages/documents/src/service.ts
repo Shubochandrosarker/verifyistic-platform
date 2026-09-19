@@ -274,6 +274,38 @@ export class DocumentService {
 		);
 	}
 
+	/**
+	 * Worker entry (Phase 6): finalize every `processing` session (pdf-finalize job).
+	 * A per-session failure is caught and logged — the session stays `processing`
+	 * and is retried on the next sweep (doc 03 §7, doc 18 §10).
+	 */
+	async finalizeProcessing(
+		limit = 10,
+	): Promise<{ finalized: string[]; failed: string[] }> {
+		const pending = await this.db
+			.selectFrom("signing_sessions")
+			.select(["id"])
+			.where("status", "=", "processing")
+			.orderBy("updated_at", "asc")
+			.limit(limit)
+			.execute();
+		const finalized: string[] = [];
+		const failed: string[] = [];
+		for (const row of pending) {
+			try {
+				const result = await this.finalize(row.id);
+				if (result) finalized.push(row.id);
+			} catch (error) {
+				console.error("finalize_job_failed", {
+					session_id: row.id,
+					message: (error as Error).message,
+				});
+				failed.push(row.id);
+			}
+		}
+		return { finalized, failed };
+	}
+
 	// --- business access ------------------------------------------------------
 
 	async get(

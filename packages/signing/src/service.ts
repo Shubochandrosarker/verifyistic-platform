@@ -746,6 +746,31 @@ export class SigningService {
 	}
 
 	/**
+	 * Retention sweeper (Phase 6 retention job): lazily expire every overdue
+	 * not-yet-finalized session. Tokens of expired sessions are revoked.
+	 * Returns the number expired.
+	 */
+	async expireOverdue(): Promise<number> {
+		const now = nowIso();
+		const overdue = await this.db
+			.selectFrom("signing_sessions")
+			.select(["id", "status"])
+			.where("expires_at", "<=", now)
+			.where("token_expires_at", "<=", now)
+			.where("status", "in", ["created", "sent", "viewed", "in_progress"])
+			.execute();
+		for (const row of overdue) {
+			assertTransition(row.status, "expired");
+			await this.db
+				.updateTable("signing_sessions")
+				.set({ status: "expired", token_revoked_at: now, updated_at: now })
+				.where("id", "=", row.id)
+				.execute();
+		}
+		return overdue.length;
+	}
+
+	/**
 	 * Worker seam (Phase 5 wires PDF finalization before this): processing → completed.
 	 * A failed PDF job retries finalization from the stored signed payload (doc 03 §7).
 	 */
