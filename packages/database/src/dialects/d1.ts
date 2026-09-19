@@ -50,6 +50,7 @@ class D1KyselyDriver implements Driver {
 				const info = await statement.run();
 				return { rows: [], numAffectedRows: BigInt(info.meta?.changes ?? 0) };
 			},
+			// biome-ignore lint/correctness/useYield: guard must throw on iteration — D1 has no streaming
 			async *streamQuery() {
 				throw new Error("D1 streaming is not supported");
 			},
