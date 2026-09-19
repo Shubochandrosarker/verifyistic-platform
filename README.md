@@ -52,5 +52,6 @@ Requires Node >= 22.13 (node:sqlite) and pnpm 11 (Corepack).
 - [x] **Phase 3** — Customers & templates: customer records with normalized contact columns + guardian relationships (cursor-paginated), structured block schema with validation, draft→publish→**immutable version** engine with re-consent flags, firearm range preset library
 - [x] **Phase 4** — Signing engine: secure sessions, 256-bit signer tokens (hash-at-rest), token-authed `/v1/sign/{token}` transport with rate limiting, hosted signer page at `/s/{token}`, server-side field/conditional/consent validation, drawn + typed signatures, server-side guardian branch (DOB × policy), decline/cancel/expiry, **idempotent completion transaction**
 - [x] **Phase 5** — Document evidence: private storage adapters (local + R2 binding + S3-compatible, contract-tested), evidence snapshot, in-core fallback PDF (Chromium seam ready), audit certificate with **non-circular hashes**, manifest, hash-verified artifacts, short-lived authorized downloads, void-without-rewrite, public `/verify/{uuid}` page
-- [ ] **Phase 6** — Async platform: queue-backed PDF worker, email, webhook retries, dead-letter, imports, retention jobs
-- [ ] Phase 7–14 — per `21-IMPLEMENTATION-ROADMAP.md`
+- [x] **Phase 6** — Async platform: DB-backed job queues (D1/SQLite portable), webhook engine (SSRF-guarded endpoints, AES-GCM secrets at rest, HMAC-SHA256 delivery, bounded backoff → dead-letter), email outbox + sender adapter, worker app (`apps/worker`: pdf-finalize, webhook pump, email pump, expiry sweeper) — finalization moved out of the request path
+- [ ] **Phase 7** — Range operations: check-in search, kiosk, QR, range template library UI
+- [ ] Phase 8–14 — per `21-IMPLEMENTATION-ROADMAP.md`
