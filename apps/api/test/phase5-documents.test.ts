@@ -90,12 +90,17 @@ async function completedDocument(): Promise<{
 	const completeBody = (await complete.json()) as {
 		data: { document_id: string | null; status: string };
 	};
-	expect(completeBody.data.status).toBe("completed");
-	expect(completeBody.data.document_id).toBeTruthy();
-	return {
-		documentId: completeBody.data.document_id!,
-		sessionId: sess.data.id,
-	};
+	expect(completeBody.data.status).toBe("processing");
+
+	// Worker tick (pdf-finalize job) → document row created, session completed.
+	await world.documents.finalizeProcessing();
+	const doc = (await world.db
+		.selectFrom("documents")
+		.selectAll()
+		.where("session_id", "=", sess.data.id)
+		.executeTakeFirst())!;
+	expect(doc).toBeDefined();
+	return { documentId: doc.id, sessionId: sess.data.id };
 }
 
 beforeEach(async () => {

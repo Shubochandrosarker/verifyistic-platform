@@ -27,6 +27,7 @@ import {
 import { signingErrorStatus, signingRoutes } from "./routes/signing.js";
 import { sitesRoutes } from "./routes/sites.js";
 import { templateErrorStatus, templatesRoutes } from "./routes/templates.js";
+import { webhookRoutes } from "./routes/webhooks.js";
 
 export { createServices, type AppServices } from "./deps.js";
 
@@ -102,6 +103,8 @@ export function createApp(services: AppServices) {
 	v1.route("/signing-sessions", signingRoutes(services));
 	v1.route("/sign", signerTransportRoutes(services));
 	v1.route("/documents", documentsRoutes(services));
+	v1.route("/webhooks", webhookRoutes(services));
+	v1.route("/webhooks", webhookRoutes(services));
 	v1.route("/api-keys", apiKeysRoutes(services));
 	v1.route("/audit-events", auditRoutes(services));
 

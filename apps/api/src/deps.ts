@@ -12,6 +12,13 @@ import {
 import { TemplateService } from "@verifyistic/templates";
 import type { TenantContext } from "@verifyistic/tenancy";
 import { TenantRepositories } from "@verifyistic/tenancy";
+import {
+	ConsoleEmailSender,
+	type DeliveryFetcher,
+	EmailOutbox,
+	type EmailSender,
+	WebhookService,
+} from "@verifyistic/webhooks";
 import type { Kysely } from "kysely";
 
 /**
@@ -28,12 +35,19 @@ export interface AppServices {
 	signing: SigningService;
 	documents: DocumentService;
 	storage: StorageProvider;
+	webhooks: WebhookService;
+	emailOutbox: EmailOutbox;
+	emailSender: EmailSender;
 }
 
 export interface ServiceOptions {
 	/** Defaults to a local filesystem store under ./local/documents (self-hosted/dev). */
 	storage?: StorageProvider;
 	verifyBaseUrl?: string;
+	/** Runtime secret for webhook-signing-secret encryption at rest (doc 06 §10). */
+	webhookEncryptionKey?: string;
+	fetcher?: DeliveryFetcher;
+	emailSender?: EmailSender;
 }
 
 export function createServices(
@@ -55,6 +69,13 @@ export function createServices(
 		audit,
 		verifyBaseUrl: options.verifyBaseUrl ?? process.env.VERIFY_BASE_URL,
 	});
+	const webhookEncryptionKey =
+		options.webhookEncryptionKey ?? process.env.WEBHOOK_ENCRYPTION_KEY ?? "";
+	const webhooks = new WebhookService(db, {
+		encryptionKey: webhookEncryptionKey || "insecure-dev-key",
+		fetcher: options.fetcher,
+	});
+	const emailSender = options.emailSender ?? new ConsoleEmailSender();
 	return {
 		db,
 		apiKeys: new ApiKeyService(db),
@@ -65,6 +86,9 @@ export function createServices(
 		signing: new SigningService(db, { templates, customers, audit }),
 		documents,
 		storage,
+		webhooks,
+		emailOutbox: new EmailOutbox(db),
+		emailSender,
 	};
 }
 
