@@ -1,0 +1,23 @@
+# Verifyistic self-hosted deployment shape — Phase 1 PREVIEW.
+# Hardened in Phase 10 (doc 12 §3-4): pinned versions, healthchecks, read-only fs, non-root,
+# migration job, install wizard. Validated locally with `docker compose -f <file> config`.
+
+services:
+  api:
+    build:
+      context: ../..
+      dockerfile: deployments/self-hosted/Dockerfile
+    environment:
+      VERIFYISTIC_MODE: self_hosted
+      DATABASE_PATH: /data/verifyistic.db
+      STORAGE_PROVIDER: local
+      STORAGE_LOCAL_PATH: /data/documents
+      PORT: "8787"
+    ports:
+      - "8787:8787"
+    volumes:
+      - verifyistic-data:/data
+    restart: unless-stopped
+
+volumes:
+  verifyistic-data:

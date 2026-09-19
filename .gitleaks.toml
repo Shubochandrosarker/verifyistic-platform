@@ -1,0 +1,5 @@
+[extend]
+useDefault = true
+
+# The doc pack under ~/.wpistic is outside this repo; nothing to allowlist yet.
+# Add repo-specific false positives here as they appear (never allowlist real secrets).
