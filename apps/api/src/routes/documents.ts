@@ -99,7 +99,7 @@ export function documentsRoutes(deps: AppServices) {
 		const download = await deps.documents.downloadByToken(token, ip);
 		if (!download)
 			throw ApiError.notFound("Invalid or expired download token.");
-		return new Response(download.bytes as unknown as BodyInit, {
+		return c.body(download.bytes.slice().buffer as ArrayBuffer, {
 			status: 200,
 			headers: {
 				"Content-Type": download.contentType,
