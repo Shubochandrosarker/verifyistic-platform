@@ -1,0 +1,22 @@
+{
+	"name": "@verifyistic/audit",
+	"version": "0.1.0",
+	"private": true,
+	"type": "module",
+	"description": "Per-organization hash-chained audit events (tamper-evident evidence, doc 04 §6 / doc 08 §5).",
+	"exports": {
+		".": "./src/index.ts"
+	},
+	"scripts": {
+		"typecheck": "tsc --noEmit"
+	},
+	"dependencies": {
+		"@verifyistic/core": "workspace:*",
+		"@verifyistic/database": "workspace:*",
+		"@verifyistic/tenancy": "workspace:*",
+		"kysely": "^0.28.0"
+	},
+	"devDependencies": {
+		"vitest": "^3.0.0"
+	}
+}
