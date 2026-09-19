@@ -55,8 +55,49 @@ export type Organization = Selectable<OrganizationsTable>;
 export type Site = Selectable<SitesTable>;
 export type ApiKey = Selectable<ApiKeysTable>;
 
+export interface OrganizationUsersTable {
+	id: string;
+	organization_id: string;
+	/** WPistic account id (cloud) or local account id (self-hosted). */
+	user_id: string;
+	/** Role preset — authorization checks capabilities, never raw role names (ADR-003). */
+	role:
+		| "owner"
+		| "admin"
+		| "compliance_manager"
+		| "front_desk"
+		| "template_manager"
+		| "auditor"
+		| "developer";
+	status: "active" | "invited" | "suspended" | "removed";
+	created_at: string;
+	updated_at: string;
+}
+
+export interface AuditEventsTable {
+	id: string;
+	organization_id: string;
+	entity_type: string;
+	entity_id: string;
+	event_type: string;
+	actor_type: string;
+	actor_id: string;
+	/** Canonical JSON of the event exactly as hashed. */
+	canonical_payload_json: string;
+	/** Per-organization monotonic sequence — chain order. */
+	sequence: number;
+	previous_hash: string;
+	event_hash: string;
+	created_at: string;
+}
+
+export type OrganizationUser = Selectable<OrganizationUsersTable>;
+export type AuditEvent = Selectable<AuditEventsTable>;
+
 export interface Database {
 	organizations: OrganizationsTable;
 	sites: SitesTable;
 	api_keys: ApiKeysTable;
+	organization_users: OrganizationUsersTable;
+	audit_events: AuditEventsTable;
 }
