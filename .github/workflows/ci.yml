@@ -14,8 +14,7 @@ jobs:
           fetch-depth: 0
 
       - uses: pnpm/action-setup@v4
-        with:
-          version: 11
+        # version is read from package.json "packageManager" — single source of truth
 
       - uses: actions/setup-node@v4
         with:
