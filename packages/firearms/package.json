@@ -1,0 +1,20 @@
+{
+	"name": "@verifyistic/firearms",
+	"version": "0.1.0",
+	"private": true,
+	"type": "module",
+	"description": "Shooting-range preset templates (doc 11 §3-4) — editable starting points, NOT legal advice.",
+	"exports": {
+		".": "./src/index.ts"
+	},
+	"scripts": {
+		"typecheck": "tsc --noEmit"
+	},
+	"dependencies": {
+		"@verifyistic/templates": "workspace:*",
+		"@verifyistic/tenancy": "workspace:*"
+	},
+	"devDependencies": {
+		"vitest": "^3.0.0"
+	}
+}
