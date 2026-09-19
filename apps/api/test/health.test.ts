@@ -1,10 +1,12 @@
+import { createInMemoryDatabase } from "@verifyistic/database/testing";
 import { describe, expect, it } from "vitest";
+import { createServices } from "../src/deps.js";
 import { createApp } from "../src/index.js";
-
-const app = createApp();
 
 describe("GET /v1/health", () => {
 	it("returns the success envelope with a minted request id", async () => {
+		const db = await createInMemoryDatabase();
+		const app = createApp(createServices(db));
 		const res = await app.request("/v1/health");
 		expect(res.status).toBe(200);
 		expect(res.headers.get("X-Request-ID")).toMatch(/^req_/);
@@ -19,6 +21,8 @@ describe("GET /v1/health", () => {
 	});
 
 	it("honors a well-formed client X-Request-ID", async () => {
+		const db = await createInMemoryDatabase();
+		const app = createApp(createServices(db));
 		const res = await app.request("/v1/health", {
 			headers: { "X-Request-ID": "client-req-123456" },
 		});
@@ -26,6 +30,8 @@ describe("GET /v1/health", () => {
 	});
 
 	it("rejects malformed client request ids and mints one instead", async () => {
+		const db = await createInMemoryDatabase();
+		const app = createApp(createServices(db));
 		const res = await app.request("/v1/health", {
 			headers: { "X-Request-ID": "x" },
 		});
@@ -35,6 +41,8 @@ describe("GET /v1/health", () => {
 
 describe("error envelope", () => {
 	it("unknown route returns the not_found error envelope", async () => {
+		const db = await createInMemoryDatabase();
+		const app = createApp(createServices(db));
 		const res = await app.request("/v1/definitely-not-a-route");
 		expect(res.status).toBe(404);
 		const body = (await res.json()) as {
