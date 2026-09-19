@@ -50,5 +50,6 @@ Requires Node >= 22.13 (node:sqlite) and pnpm 11 (Corepack).
 - [x] **Phase 1** — Foundation: migration framework + CLI (checksum-locked journal), Biome coding standards, CI (lint/typecheck/test/secret-scan), local dev run verified, env templates, compose preview, versioning policy
 - [x] **Phase 2** — Tenancy & authentication: organizations/sites/memberships, tenant-scoped repositories, API keys (`vfy_live_`/`vfy_test_`, hash-at-rest, scopes), role→capability presets, hash-chained audit events, WPistic SSO boundary, cross-tenant authorization matrix green
 - [x] **Phase 3** — Customers & templates: customer records with normalized contact columns + guardian relationships (cursor-paginated), structured block schema with validation, draft→publish→**immutable version** engine with re-consent flags, firearm range preset library
-- [ ] **Phase 4** — Signing engine (secure sessions, signer tokens, signer UI, consent, drawn/typed signatures, guardian branch, idempotent completion)
-- [ ] Phase 5–14 — per `21-IMPLEMENTATION-ROADMAP.md`
+- [x] **Phase 4** — Signing engine: secure sessions, 256-bit signer tokens (hash-at-rest), token-authed `/v1/sign/{token}` transport with rate limiting, hosted signer page at `/s/{token}`, server-side field/conditional/consent validation, drawn + typed signatures, server-side guardian branch (DOB × policy), decline/cancel/expiry, **idempotent completion transaction**
+- [ ] **Phase 5** — Document evidence: storage adapters (R2/local/S3), Chromium PDF, audit certificate, hash chains, authorized downloads, verification page
+- [ ] Phase 6–14 — per `21-IMPLEMENTATION-ROADMAP.md`
