@@ -84,8 +84,10 @@ async function storageContractSuite(
 			await expect(provider.get("../../etc/passwd")).rejects.toThrow(
 				/Invalid storage key/,
 			);
+			// Platform-correct traversal key: separators via path.join.
+			const traversalKey = join("..", "..", "escape.txt");
 			await expect(
-				provider.put("..\\..\\escape.txt", new TextEncoder().encode("x")),
+				provider.put(traversalKey, new TextEncoder().encode("x")),
 			).rejects.toThrow(/Invalid storage key/);
 			// Percent-encoded traversal is a literal filename at the storage layer — allowed.
 			await provider.put("..%2f..%2fescape.txt", new TextEncoder().encode("x"));
