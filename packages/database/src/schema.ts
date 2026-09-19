@@ -314,6 +314,58 @@ export type Document = Selectable<DocumentsTable>;
 export type DocumentAccessEvent = Selectable<DocumentAccessEventsTable>;
 export type DownloadToken = Selectable<DownloadTokensTable>;
 
+export interface WebhookEndpointsTable {
+	id: string;
+	organization_id: string;
+	url: string;
+	/** AES-256-GCM ciphertext of the per-endpoint signing secret (doc 06 §10). */
+	secret_ciphertext: string;
+	/** JSON array of subscribed event types; ["*"] = all. */
+	subscribed_events: string;
+	status: "active" | "paused" | "disabled";
+	created_at: string;
+	updated_at: string;
+}
+
+export interface WebhookDeliveriesTable {
+	id: string;
+	organization_id: string;
+	endpoint_id: string;
+	event_id: string;
+	event_type: string;
+	payload_json: string;
+	attempt: number;
+	max_attempts: number;
+	status: "pending" | "delivered" | "failed" | "dead_letter";
+	request_id: string | null;
+	response_status: number | null;
+	next_retry_at: string | null;
+	delivered_at: string | null;
+	last_error: string | null;
+	created_at: string;
+	updated_at: string;
+}
+
+export interface EmailOutboxTable {
+	id: string;
+	organization_id: string | null;
+	to_email: string;
+	template: string;
+	payload_json: string;
+	status: "pending" | "sent" | "failed" | "dead_letter";
+	attempt: number;
+	max_attempts: number;
+	next_attempt_at: string | null;
+	sent_at: string | null;
+	last_error: string | null;
+	created_at: string;
+	updated_at: string;
+}
+
+export type WebhookEndpoint = Selectable<WebhookEndpointsTable>;
+export type WebhookDelivery = Selectable<WebhookDeliveriesTable>;
+export type EmailOutboxMessage = Selectable<EmailOutboxTable>;
+
 export interface Database {
 	organizations: OrganizationsTable;
 	sites: SitesTable;
@@ -331,4 +383,7 @@ export interface Database {
 	documents: DocumentsTable;
 	document_access_events: DocumentAccessEventsTable;
 	download_tokens: DownloadTokensTable;
+	webhook_endpoints: WebhookEndpointsTable;
+	webhook_deliveries: WebhookDeliveriesTable;
+	email_outbox: EmailOutboxTable;
 }
