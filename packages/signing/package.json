@@ -1,0 +1,25 @@
+{
+	"name": "@verifyistic/signing",
+	"version": "0.1.0",
+	"private": true,
+	"type": "module",
+	"description": "Signing engine: sessions, signer tokens, guardian branch, field/consent validation, idempotent completion (doc 03 §7, doc 07).",
+	"exports": {
+		".": "./src/index.ts"
+	},
+	"scripts": {
+		"typecheck": "tsc --noEmit"
+	},
+	"dependencies": {
+		"@verifyistic/audit": "workspace:*",
+		"@verifyistic/core": "workspace:*",
+		"@verifyistic/customers": "workspace:*",
+		"@verifyistic/database": "workspace:*",
+		"@verifyistic/tenancy": "workspace:*",
+		"@verifyistic/templates": "workspace:*",
+		"kysely": "^0.28.0"
+	},
+	"devDependencies": {
+		"vitest": "^3.0.0"
+	}
+}
