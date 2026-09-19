@@ -159,13 +159,13 @@ export function createApp(
 	v1.get("/docs", (c) =>
 		c.html(
 			`<!doctype html><html><head><meta charset="utf-8"><title>Verifyistic API docs</title>` +
-				`<style>body{font-family:-apple-system,sans-serif;max-width:720px;margin:48px auto;padding:0 16px;line-height:1.6}</style>` +
-				`</head><body><h1>Verifyistic API v1</h1>` +
-				`<p>Base: <code>/v1</code> · Auth: <code>Authorization: Bearer vfy_live_…</code></p>` +
+				"<style>body{font-family:-apple-system,sans-serif;max-width:720px;margin:48px auto;padding:0 16px;line-height:1.6}</style>" +
+				"</head><body><h1>Verifyistic API v1</h1>" +
+				"<p>Base: <code>/v1</code> · Auth: <code>Authorization: Bearer vfy_live_…</code></p>" +
 				`<p>Machine contract: <a href="/v1/openapi.json">openapi.json</a> (OpenAPI 3.1).</p>` +
-				`<p>Resources: sites, customers, templates, signing-sessions, documents, checkin, webhooks, api-keys, audit-events.</p>` +
+				"<p>Resources: sites, customers, templates, signing-sessions, documents, checkin, webhooks, api-keys, audit-events.</p>" +
 				`<p>Envelopes: success <code>{"data":…,"meta":{"request_id"}}</code>; error <code>{"error":{code,message,request_id}}</code>.</p>` +
-				`</body></html>`,
+				"</body></html>",
 		),
 	);
 
