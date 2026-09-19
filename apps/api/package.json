@@ -20,6 +20,7 @@
 		"@verifyistic/customers": "workspace:*",
 		"@verifyistic/database": "workspace:*",
 		"@verifyistic/firearms": "workspace:*",
+		"@verifyistic/signing": "workspace:*",
 		"@verifyistic/tenancy": "workspace:*",
 		"@verifyistic/templates": "workspace:*",
 		"hono": "^4.6.0",
