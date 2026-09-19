@@ -7,11 +7,8 @@
 import { existsSync, mkdirSync, readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
-import {
-	type MigrationDefinition,
-	openNodeSqlite,
-	runMigrations,
-} from "../src/index.js";
+import { openNodeSqlite } from "../src/drivers/node-sqlite.js";
+import { type MigrationDefinition, runMigrations } from "../src/index.js";
 
 const migrationsDir = fileURLToPath(new URL("../migrations/", import.meta.url));
 const dbPath = process.argv[2] ?? "local/dev.db";

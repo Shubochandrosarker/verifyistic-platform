@@ -1,0 +1,19 @@
+name = "verifyistic-api"
+main = "src/worker.ts"
+compatibility_date = "2026-09-01"
+compatibility_flags = ["nodejs_compat"]
+
+[vars]
+VERIFYISTIC_MODE = "cloud"
+ENVIRONMENT = "staging"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "verifyistic-db-staging"
+database_id = "f432985b-3644-4cf7-b418-34722f88cc45"
+
+[[r2_buckets]]
+binding = "VAULT"
+bucket_name = "verifyistic-staging-private"
+
+# Secrets (runtime): WEBHOOK_ENCRYPTION_KEY via `wrangler secret put`.

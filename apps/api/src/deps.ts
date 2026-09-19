@@ -5,10 +5,10 @@ import type { Database } from "@verifyistic/database";
 import { DocumentService } from "@verifyistic/documents";
 import { SigningService } from "@verifyistic/signing";
 import {
-	LocalStorageProvider,
 	MemoryStorageProvider,
 	type StorageProvider,
 } from "@verifyistic/storage";
+import { LocalStorageProvider } from "@verifyistic/storage/local";
 import { TemplateService } from "@verifyistic/templates";
 import type { TenantContext } from "@verifyistic/tenancy";
 import { TenantRepositories } from "@verifyistic/tenancy";
@@ -57,20 +57,32 @@ export function createServices(
 	const audit = new AuditService(db);
 	const customers = new CustomersRepository(db);
 	const templates = new TemplateService(db);
+	// Node-only local filesystem default — only evaluated when no storage is injected
+	// AND a Node runtime is present (Workers callers always inject R2 storage).
 	const storage =
 		options.storage ??
-		(process.env.STORAGE_PROVIDER === "memory"
+		(typeof process !== "undefined" &&
+		process.env?.STORAGE_PROVIDER === "memory"
 			? new MemoryStorageProvider()
 			: new LocalStorageProvider(
-					process.env.STORAGE_LOCAL_PATH ?? "local/documents",
+					typeof process !== "undefined"
+						? (process.env?.STORAGE_LOCAL_PATH ?? "local/documents")
+						: "local/documents",
 				));
 	const documents = new DocumentService(db, {
 		storage,
 		audit,
-		verifyBaseUrl: options.verifyBaseUrl ?? process.env.VERIFY_BASE_URL,
+		verifyBaseUrl:
+			options.verifyBaseUrl ??
+			(typeof process !== "undefined"
+				? process.env?.VERIFY_BASE_URL
+				: undefined),
 	});
 	const webhookEncryptionKey =
-		options.webhookEncryptionKey ?? process.env.WEBHOOK_ENCRYPTION_KEY ?? "";
+		options.webhookEncryptionKey ??
+		(typeof process !== "undefined"
+			? (process.env?.WEBHOOK_ENCRYPTION_KEY ?? "")
+			: "");
 	const webhooks = new WebhookService(db, {
 		encryptionKey: webhookEncryptionKey || "insecure-dev-key",
 		fetcher: options.fetcher,

@@ -5,7 +5,8 @@
 	"type": "module",
 	"description": "StorageProvider abstraction — signing domain never couples to R2/S3 SDKs directly (doc 03 §8, doc 09).",
 	"exports": {
-		".": "./src/index.ts"
+		".": "./src/index.ts",
+		"./local": "./src/local.ts"
 	},
 	"scripts": {
 		"typecheck": "tsc --noEmit"
