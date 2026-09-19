@@ -1,0 +1,23 @@
+{
+	"name": "@verifyistic/api",
+	"version": "0.1.0",
+	"private": true,
+	"type": "module",
+	"description": "Verifyistic API — api.verifyistic.com/v1 (cloud Workers) and self-hosted API. Hono app, runtime-agnostic.",
+	"exports": {
+		".": "./src/index.ts"
+	},
+	"scripts": {
+		"typecheck": "tsc --noEmit",
+		"dev": "node --import tsx src/node.ts",
+		"start": "node --import tsx src/node.ts"
+	},
+	"dependencies": {
+		"@hono/node-server": "^1.13.0",
+		"@verifyistic/core": "workspace:*",
+		"hono": "^4.6.0"
+	},
+	"devDependencies": {
+		"vitest": "^3.0.0"
+	}
+}
