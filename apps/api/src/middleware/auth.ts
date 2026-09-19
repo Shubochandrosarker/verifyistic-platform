@@ -30,6 +30,10 @@ export function createAuthMiddleware(apiKeys: ApiKeyService) {
 					"keyMode",
 					record.key_prefix.startsWith("vfy_test_") ? "test" : "live",
 				);
+				c.set(
+					"siteRestrictions",
+					parseSiteRestrictionsSafe(record.site_restrictions),
+				);
 			}
 		}
 		await next();
@@ -43,6 +47,17 @@ function parseScopesSafe(json: string): Scope[] {
 		return parsed.filter((entry): entry is Scope => typeof entry === "string");
 	} catch {
 		return [];
+	}
+}
+
+function parseSiteRestrictionsSafe(json: string | null): string[] | null {
+	if (json === null) return null;
+	try {
+		const parsed: unknown = JSON.parse(json);
+		if (!Array.isArray(parsed)) return null;
+		return parsed.filter((entry): entry is string => typeof entry === "string");
+	} catch {
+		return null;
 	}
 }
 
@@ -71,6 +86,35 @@ export function requireScope(c: Context, ...required: Scope[]): AuthContext {
 		);
 	}
 	return auth;
+}
+
+/**
+ * Site-scope gate (doc 06 §5): site-restricted keys (WordPress connector
+ * credentials) may only act on their allowed sites. Returns the effective
+ * site id: the requested one (validated) or the single allowed site.
+ * Throws 403 when a requested site is outside the key's restrictions.
+ */
+export function resolveSiteScope(
+	c: Context,
+	requestedSiteId: string | null | undefined,
+): { allowedSiteIds: string[] | null; siteId: string | null } {
+	const allowed = c.get("siteRestrictions") ?? null;
+	if (allowed === null || allowed.length === 0) {
+		return { allowedSiteIds: null, siteId: requestedSiteId ?? null };
+	}
+	if (requestedSiteId) {
+		if (!allowed.includes(requestedSiteId)) {
+			throw new ApiError(
+				"forbidden",
+				"This credential is not authorized for the requested site.",
+			);
+		}
+		return { allowedSiteIds: allowed, siteId: requestedSiteId };
+	}
+	return {
+		allowedSiteIds: allowed,
+		siteId: allowed.length === 1 ? allowed[0]! : null,
+	};
 }
 
 export type { TenantContext };
