@@ -44,6 +44,8 @@ services:
       - wp-core:/var/www/html
       # Live plugin source (reference clone of the v2 branch) — edit + refresh without rebuilds
       - C:/Users/Qbits/.wpistic/verifyistic-ref/verifyistic-plugin-v2/verifyistic:/var/www/html/wp-content/plugins/verifyistic
+      # Verifyistic Connector (this repo) — live mount
+      - ../../integrations/wordpress/verifyistic-connector:/var/www/html/wp-content/plugins/verifyistic-connector
 
   wpcli:
     image: wordpress:cli
@@ -59,6 +61,7 @@ services:
     volumes:
       - wp-core:/var/www/html
       - C:/Users/Qbits/.wpistic/verifyistic-ref/verifyistic-plugin-v2/verifyistic:/var/www/html/wp-content/plugins/verifyistic
+      - ../../integrations/wordpress/verifyistic-connector:/var/www/html/wp-content/plugins/verifyistic-connector
     restart: "no"
     command: >
       /bin/sh -c '

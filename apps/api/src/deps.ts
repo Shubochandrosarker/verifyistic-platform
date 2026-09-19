@@ -122,5 +122,6 @@ declare module "hono" {
 		tenant?: TenantContext;
 		scopes?: Scope[];
 		keyMode?: ApiKeyMode;
+		siteRestrictions?: string[] | null;
 	}
 }

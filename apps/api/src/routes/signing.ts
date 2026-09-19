@@ -15,7 +15,7 @@ import {
 	resolveIdempotency,
 	storeIdempotentResponse,
 } from "../lib/idempotency.js";
-import { requireScope } from "../middleware/auth.js";
+import { requireScope, resolveSiteScope } from "../middleware/auth.js";
 
 /** Domain errors → API error envelope (used by index.ts onError). */
 export function signingErrorStatus(error: unknown): {
@@ -91,11 +91,17 @@ export function signingRoutes(deps: AppServices) {
 		const {
 			template_id,
 			customer_id,
-			site_id,
+			site_id: requestedSiteId,
 			expires_in_seconds,
 			delivery_method,
 			metadata,
 		} = body as Record<string, unknown>;
+		// Site-scoped credentials (WordPress connector, doc 06 §5): the key's allowed
+		// sites bound the request; a single-site key defaults the site automatically.
+		const { siteId: scopedSiteId } = resolveSiteScope(
+			c,
+			typeof requestedSiteId === "string" ? requestedSiteId : null,
+		);
 		if (typeof template_id !== "string" || template_id.length === 0) {
 			throw ApiError.validation("template_id is required.", {
 				template_id: ["required"],
@@ -125,7 +131,7 @@ export function signingRoutes(deps: AppServices) {
 			{
 				template_id,
 				customer_id,
-				site_id: (site_id as string | null) ?? null,
+				site_id: scopedSiteId,
 				expires_in_seconds,
 				delivery_method:
 					typeof delivery_method === "string" ? delivery_method : undefined,
