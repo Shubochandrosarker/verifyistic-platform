@@ -1,0 +1,22 @@
+{
+	"name": "@verifyistic/auth",
+	"version": "0.1.0",
+	"private": true,
+	"type": "module",
+	"description": "API keys (vfy_live_/vfy_test_), scopes, role-to-capability presets, WPistic SSO boundary.",
+	"exports": {
+		".": "./src/index.ts"
+	},
+	"scripts": {
+		"typecheck": "tsc --noEmit"
+	},
+	"dependencies": {
+		"@verifyistic/core": "workspace:*",
+		"@verifyistic/database": "workspace:*",
+		"@verifyistic/tenancy": "workspace:*",
+		"kysely": "^0.28.0"
+	},
+	"devDependencies": {
+		"vitest": "^3.0.0"
+	}
+}
