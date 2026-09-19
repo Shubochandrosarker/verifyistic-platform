@@ -1,10 +1,7 @@
 import { DatabaseSync } from "node:sqlite";
 import { describe, expect, it } from "vitest";
-import {
-	type MigrationDefinition,
-	createNodeSqliteDriver,
-	runMigrations,
-} from "../src/index.js";
+import { createNodeSqliteDriver } from "../src/drivers/node-sqlite.js";
+import { type MigrationDefinition, runMigrations } from "../src/index.js";
 
 const MIGRATION_A: MigrationDefinition = {
 	name: "0001_test",

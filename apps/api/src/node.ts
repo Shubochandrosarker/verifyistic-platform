@@ -10,11 +10,12 @@ import { fileURLToPath } from "node:url";
  * Boot applies pending migrations to DATABASE_PATH (idempotent, same runner as `pnpm migrate`).
  */
 import { serve } from "@hono/node-server";
+import { runMigrations } from "@verifyistic/database";
 import {
 	createNodeSqliteDriver,
 	createNodeSqliteKysely,
-	runMigrations,
-} from "@verifyistic/database";
+} from "@verifyistic/database/node";
+import { LocalStorageProvider } from "@verifyistic/storage/local";
 import { createApp, createServices } from "./index.js";
 
 const dbPath = process.env.DATABASE_PATH ?? "local/dev.db";

@@ -7,11 +7,11 @@ import { join } from "node:path";
 import { DatabaseSync } from "node:sqlite";
 import { fileURLToPath } from "node:url";
 import { createServices } from "@verifyistic/api";
+import { runMigrations } from "@verifyistic/database";
 import {
 	createNodeSqliteDriver,
 	createNodeSqliteKysely,
-	runMigrations,
-} from "@verifyistic/database";
+} from "@verifyistic/database/node";
 import { runJobsOnce } from "./index.js";
 
 const dbPath = process.env.DATABASE_PATH ?? "local/dev.db";
