@@ -1,0 +1,22 @@
+{
+	"name": "@verifyistic/customers",
+	"version": "0.1.0",
+	"private": true,
+	"type": "module",
+	"description": "Customer records with normalized contact columns + guardian/household relationships (data model v1 §2).",
+	"exports": {
+		".": "./src/index.ts"
+	},
+	"scripts": {
+		"typecheck": "tsc --noEmit"
+	},
+	"dependencies": {
+		"@verifyistic/core": "workspace:*",
+		"@verifyistic/database": "workspace:*",
+		"@verifyistic/tenancy": "workspace:*",
+		"kysely": "^0.28.0"
+	},
+	"devDependencies": {
+		"vitest": "^3.0.0"
+	}
+}
