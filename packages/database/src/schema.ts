@@ -94,10 +94,90 @@ export interface AuditEventsTable {
 export type OrganizationUser = Selectable<OrganizationUsersTable>;
 export type AuditEvent = Selectable<AuditEventsTable>;
 
+export interface CustomersTable {
+	id: string;
+	organization_id: string;
+	primary_site_id: string | null;
+	first_name: string;
+	last_name: string;
+	email: string | null;
+	/** Lowercased, trimmed — the dedupe/lookup column. */
+	email_normalized: string | null;
+	phone: string | null;
+	/** Digits with optional leading + — the lookup column. */
+	phone_normalized: string | null;
+	/** ISO date (YYYY-MM-DD); sensitive — public surfaces never expose it. */
+	date_of_birth: string | null;
+	/** JSON object. */
+	address_json: string | null;
+	status: "active" | "inactive" | "archived";
+	source: string;
+	external_ref: string | null;
+	created_at: string;
+	updated_at: string;
+}
+
+export interface CustomerRelationshipsTable {
+	id: string;
+	organization_id: string;
+	customer_id: string;
+	related_customer_id: string;
+	relationship_type: "guardian_of" | "guarded_by" | "household";
+	effective_from: string | null;
+	effective_to: string | null;
+	/** JSON object. */
+	metadata: string | null;
+	created_at: string;
+}
+
+export interface TemplatesTable {
+	id: string;
+	organization_id: string;
+	name: string;
+	category: string;
+	status: "draft" | "published" | "archived";
+	current_version_id: string | null;
+	default_validity_days: number | null;
+	/** JSON: { min_age, require_guardian_for_minors } (doc 07 §7). */
+	guardian_policy_json: string | null;
+	created_by: string | null;
+	created_at: string;
+	updated_at: string;
+}
+
+export interface TemplateVersionsTable {
+	id: string;
+	organization_id: string;
+	template_id: string;
+	version_number: number;
+	title: string;
+	/** Structured block schema (doc 19 §4) — validated before publish. */
+	document_schema_json: string;
+	rendered_source_html: string | null;
+	/** SHA-256 of the canonical schema, fixed at publish. */
+	source_hash_sha256: string;
+	consent_text_version: string;
+	effective_from: string | null;
+	requires_reconsent: number;
+	published_by: string | null;
+	published_at: string | null;
+	immutable_at: string | null;
+	created_at: string;
+}
+
+export type Customer = Selectable<CustomersTable>;
+export type CustomerRelationship = Selectable<CustomerRelationshipsTable>;
+export type Template = Selectable<TemplatesTable>;
+export type TemplateVersion = Selectable<TemplateVersionsTable>;
+
 export interface Database {
 	organizations: OrganizationsTable;
 	sites: SitesTable;
 	api_keys: ApiKeysTable;
 	organization_users: OrganizationUsersTable;
 	audit_events: AuditEventsTable;
+	customers: CustomersTable;
+	customer_relationships: CustomerRelationshipsTable;
+	templates: TemplatesTable;
+	template_versions: TemplateVersionsTable;
 }
