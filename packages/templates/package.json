@@ -1,0 +1,22 @@
+{
+	"name": "@verifyistic/templates",
+	"version": "0.1.0",
+	"private": true,
+	"type": "module",
+	"description": "Template engine: structured block schemas, draft → publish → immutable versions, re-consent flags (doc 07 §9, doc 19 §4).",
+	"exports": {
+		".": "./src/index.ts"
+	},
+	"scripts": {
+		"typecheck": "tsc --noEmit"
+	},
+	"dependencies": {
+		"@verifyistic/core": "workspace:*",
+		"@verifyistic/database": "workspace:*",
+		"@verifyistic/tenancy": "workspace:*",
+		"kysely": "^0.28.0"
+	},
+	"devDependencies": {
+		"vitest": "^3.0.0"
+	}
+}
