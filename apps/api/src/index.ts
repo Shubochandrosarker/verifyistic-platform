@@ -13,8 +13,10 @@ import { fail, failInternal, failNotFound, ok } from "./lib/envelope.js";
 import { createAuthMiddleware } from "./middleware/auth.js";
 import { apiKeysRoutes } from "./routes/api-keys.js";
 import { auditRoutes } from "./routes/audit.js";
+import { customersRoutes } from "./routes/customers.js";
 import { organizationRoutes } from "./routes/organization.js";
 import { sitesRoutes } from "./routes/sites.js";
+import { templateErrorStatus, templatesRoutes } from "./routes/templates.js";
 
 export { createServices, type AppServices } from "./deps.js";
 
@@ -41,6 +43,20 @@ export function createApp(services: AppServices) {
 		if (err instanceof ApiError) {
 			return fail(c, err);
 		}
+		// Domain errors → API error envelope (404/409/400) without leaking internals.
+		const mapped = templateErrorStatus(err);
+		if (mapped) {
+			return c.json(
+				{
+					error: {
+						code: mapped.code,
+						message: err.message,
+						request_id: c.get("requestId"),
+					},
+				},
+				mapped.status,
+			);
+		}
 		// Never leak internals; log safe fields only. Raw tokens/keys must never reach logs (doc 06 §10).
 		console.error("unhandled_error", {
 			request_id: c.get("requestId"),
@@ -63,6 +79,8 @@ export function createApp(services: AppServices) {
 
 	v1.route("/organization", organizationRoutes(services));
 	v1.route("/sites", sitesRoutes(services));
+	v1.route("/customers", customersRoutes(services));
+	v1.route("/templates", templatesRoutes(services));
 	v1.route("/api-keys", apiKeysRoutes(services));
 	v1.route("/audit-events", auditRoutes(services));
 

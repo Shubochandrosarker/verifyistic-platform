@@ -17,8 +17,11 @@
 		"@verifyistic/audit": "workspace:*",
 		"@verifyistic/auth": "workspace:*",
 		"@verifyistic/core": "workspace:*",
+		"@verifyistic/customers": "workspace:*",
 		"@verifyistic/database": "workspace:*",
+		"@verifyistic/firearms": "workspace:*",
 		"@verifyistic/tenancy": "workspace:*",
+		"@verifyistic/templates": "workspace:*",
 		"hono": "^4.6.0",
 		"kysely": "^0.28.0"
 	},
