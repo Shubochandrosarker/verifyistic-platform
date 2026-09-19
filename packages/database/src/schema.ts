@@ -170,6 +170,88 @@ export type CustomerRelationship = Selectable<CustomerRelationshipsTable>;
 export type Template = Selectable<TemplatesTable>;
 export type TemplateVersion = Selectable<TemplateVersionsTable>;
 
+export interface SigningSessionsTable {
+	id: string;
+	organization_id: string;
+	site_id: string | null;
+	template_version_id: string;
+	customer_id: string;
+	/** Enforced by packages/core/src/signing/status.ts state machine. */
+	status:
+		| "created"
+		| "sent"
+		| "viewed"
+		| "in_progress"
+		| "processing"
+		| "completed"
+		| "declined"
+		| "cancelled"
+		| "expired"
+		| "failed";
+	/** SHA-256 of the raw signer token — raw token never stored. */
+	token_hash: string;
+	token_expires_at: string;
+	token_revoked_at: string | null;
+	delivery_method: string;
+	requested_by: string | null;
+	started_at: string | null;
+	completed_at: string | null;
+	declined_at: string | null;
+	expires_at: string | null;
+	/** JSON: request metadata + evaluated shown_conditionals. */
+	metadata: string | null;
+	created_at: string;
+	updated_at: string;
+}
+
+export interface SigningParticipantsTable {
+	id: string;
+	organization_id: string;
+	session_id: string;
+	customer_id: string | null;
+	role: "signer" | "guardian" | "witness" | "staff";
+	email_snapshot: string | null;
+	phone_snapshot: string | null;
+	required: number;
+	status: "pending" | "signed" | "declined" | "skipped";
+	signed_at: string | null;
+	created_at: string;
+}
+
+export interface FieldResponsesTable {
+	id: string;
+	organization_id: string;
+	session_id: string;
+	participant_id: string | null;
+	field_key: string;
+	field_type: string;
+	value_json: string;
+	value_hash: string;
+	created_at: string;
+}
+
+export interface SignaturesTable {
+	id: string;
+	organization_id: string;
+	session_id: string;
+	participant_id: string;
+	method: "drawn" | "typed";
+	/** Phase 5: artifact bytes move to object storage; key recorded here. */
+	storage_key: string | null;
+	signature_hash: string;
+	typed_name: string | null;
+	captured_at: string;
+	ip: string | null;
+	/** Safe device snapshot only (platform/browser class). */
+	user_agent_safe_snapshot: string | null;
+	metadata: string | null;
+}
+
+export type SigningSession = Selectable<SigningSessionsTable>;
+export type SigningParticipant = Selectable<SigningParticipantsTable>;
+export type FieldResponse = Selectable<FieldResponsesTable>;
+export type Signature = Selectable<SignaturesTable>;
+
 export interface Database {
 	organizations: OrganizationsTable;
 	sites: SitesTable;
@@ -180,4 +262,8 @@ export interface Database {
 	customer_relationships: CustomerRelationshipsTable;
 	templates: TemplatesTable;
 	template_versions: TemplateVersionsTable;
+	signing_sessions: SigningSessionsTable;
+	signing_participants: SigningParticipantsTable;
+	field_responses: FieldResponsesTable;
+	signatures: SignaturesTable;
 }
