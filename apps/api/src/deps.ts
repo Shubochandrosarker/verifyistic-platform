@@ -1,6 +1,8 @@
 import { AuditService } from "@verifyistic/audit";
 import { type ApiKeyMode, ApiKeyService, type Scope } from "@verifyistic/auth";
+import { CustomersRepository } from "@verifyistic/customers";
 import type { Database } from "@verifyistic/database";
+import { TemplateService } from "@verifyistic/templates";
 import type { TenantContext } from "@verifyistic/tenancy";
 import { TenantRepositories } from "@verifyistic/tenancy";
 import type { Kysely } from "kysely";
@@ -14,6 +16,8 @@ export interface AppServices {
 	apiKeys: ApiKeyService;
 	repos: TenantRepositories;
 	audit: AuditService;
+	customers: CustomersRepository;
+	templates: TemplateService;
 }
 
 export function createServices(db: Kysely<Database>): AppServices {
@@ -22,6 +26,8 @@ export function createServices(db: Kysely<Database>): AppServices {
 		apiKeys: new ApiKeyService(db),
 		repos: new TenantRepositories(db),
 		audit: new AuditService(db),
+		customers: new CustomersRepository(db),
+		templates: new TemplateService(db),
 	};
 }
 

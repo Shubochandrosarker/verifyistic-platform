@@ -1,4 +1,4 @@
-import { type Scope, isScope } from "@verifyistic/auth";
+import { SCOPES, type Scope, isScope } from "@verifyistic/auth";
 import { ApiError } from "@verifyistic/core";
 import { Hono } from "hono";
 import type { AppServices } from "../deps.js";
@@ -64,8 +64,10 @@ export function apiKeysRoutes(deps: AppServices) {
 			!scopes.every((entry) => typeof entry === "string" && isScope(entry))
 		) {
 			throw ApiError.validation(
-				`scopes must be a non-empty array of: ${["sites:read", "sites:write", "api_keys:read", "api_keys:write", "audit:read"].join(", ")}`,
-				{ scopes: ["invalid"] },
+				`scopes must be a non-empty array of: ${SCOPES.join(", ")}`,
+				{
+					scopes: ["invalid"],
+				},
 			);
 		}
 		if (mode !== undefined && mode !== "live" && mode !== "test") {
