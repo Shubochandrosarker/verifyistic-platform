@@ -1,0 +1,75 @@
+# Local WordPress for Verifyistic plugin testing (dev only — NEVER production).
+# Auto-installs WP core via wp-cli and mounts the v2 plugin (reference clone) as a live plugin dir.
+#
+# Usage:
+#   docker compose -f deployments/local-wp/docker-compose.yml up -d
+#   Site:        http://localhost:8088          (admin / verifyistic-dev)
+#   WP admin:    http://localhost:8088/wp-admin
+#   Re-test plugin changes: they are bind-mounted live — deactivate/reactivate in wp-admin or:
+#   docker compose -f deployments/local-wp/docker-compose.yml exec wpcli wp plugin activate verifyistic
+#
+# Dev credentials are intentionally trivial and local-only.
+
+name: verifyistic-local-wp
+
+services:
+  db:
+    image: mysql:8.4
+    environment:
+      MYSQL_DATABASE: wordpress
+      MYSQL_USER: wordpress
+      MYSQL_PASSWORD: wordpress
+      MYSQL_ROOT_PASSWORD: root-local-dev-only
+    volumes:
+      - wp-db:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uwordpress", "-pwordpress"]
+      interval: 5s
+      timeout: 3s
+      retries: 30
+
+  wp:
+    image: wordpress:latest
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "8088:80"
+    environment:
+      WORDPRESS_DB_HOST: db
+      WORDPRESS_DB_USER: wordpress
+      WORDPRESS_DB_PASSWORD: wordpress
+      WORDPRESS_DB_NAME: wordpress
+    volumes:
+      - wp-core:/var/www/html
+      # Live plugin source (reference clone of the v2 branch) — edit + refresh without rebuilds
+      - C:/Users/Qbits/.wpistic/verifyistic-ref/verifyistic-plugin-v2/verifyistic:/var/www/html/wp-content/plugins/verifyistic
+
+  wpcli:
+    image: wordpress:cli
+    depends_on:
+      db:
+        condition: service_healthy
+    user: "33:33"
+    environment:
+      WORDPRESS_DB_HOST: db
+      WORDPRESS_DB_USER: wordpress
+      WORDPRESS_DB_PASSWORD: wordpress
+      WORDPRESS_DB_NAME: wordpress
+    volumes:
+      - wp-core:/var/www/html
+      - C:/Users/Qbits/.wpistic/verifyistic-ref/verifyistic-plugin-v2/verifyistic:/var/www/html/wp-content/plugins/verifyistic
+    restart: "no"
+    command: >
+      /bin/sh -c '
+      sleep 15;
+      wp core install --url=http://localhost:8088 --title="Verifyistic Dev" --admin_user=admin --admin_password=verifyistic-dev --admin_email=admin@verifyistic.test --skip-email;
+      echo "--- plugins ---";
+      wp plugin list;
+      wp plugin activate verifyistic && echo "PLUGIN ACTIVATED" || echo "PLUGIN ACTIVATION FAILED";
+      wp core version;
+      '
+
+volumes:
+  wp-db:
+  wp-core:
