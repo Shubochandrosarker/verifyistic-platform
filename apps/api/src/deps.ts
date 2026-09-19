@@ -2,7 +2,13 @@ import { AuditService } from "@verifyistic/audit";
 import { type ApiKeyMode, ApiKeyService, type Scope } from "@verifyistic/auth";
 import { CustomersRepository } from "@verifyistic/customers";
 import type { Database } from "@verifyistic/database";
+import { DocumentService } from "@verifyistic/documents";
 import { SigningService } from "@verifyistic/signing";
+import {
+	LocalStorageProvider,
+	MemoryStorageProvider,
+	type StorageProvider,
+} from "@verifyistic/storage";
 import { TemplateService } from "@verifyistic/templates";
 import type { TenantContext } from "@verifyistic/tenancy";
 import { TenantRepositories } from "@verifyistic/tenancy";
@@ -20,12 +26,35 @@ export interface AppServices {
 	customers: CustomersRepository;
 	templates: TemplateService;
 	signing: SigningService;
+	documents: DocumentService;
+	storage: StorageProvider;
 }
 
-export function createServices(db: Kysely<Database>): AppServices {
+export interface ServiceOptions {
+	/** Defaults to a local filesystem store under ./local/documents (self-hosted/dev). */
+	storage?: StorageProvider;
+	verifyBaseUrl?: string;
+}
+
+export function createServices(
+	db: Kysely<Database>,
+	options: ServiceOptions = {},
+): AppServices {
 	const audit = new AuditService(db);
 	const customers = new CustomersRepository(db);
 	const templates = new TemplateService(db);
+	const storage =
+		options.storage ??
+		(process.env.STORAGE_PROVIDER === "memory"
+			? new MemoryStorageProvider()
+			: new LocalStorageProvider(
+					process.env.STORAGE_LOCAL_PATH ?? "local/documents",
+				));
+	const documents = new DocumentService(db, {
+		storage,
+		audit,
+		verifyBaseUrl: options.verifyBaseUrl ?? process.env.VERIFY_BASE_URL,
+	});
 	return {
 		db,
 		apiKeys: new ApiKeyService(db),
@@ -34,6 +63,8 @@ export function createServices(db: Kysely<Database>): AppServices {
 		customers,
 		templates,
 		signing: new SigningService(db, { templates, customers, audit }),
+		documents,
+		storage,
 	};
 }
 

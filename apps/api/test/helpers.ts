@@ -1,5 +1,6 @@
 import type { Scope } from "@verifyistic/auth";
 import { createInMemoryDatabase } from "@verifyistic/database/testing";
+import { MemoryStorageProvider } from "@verifyistic/storage";
 import type { Hono } from "hono";
 import { type AppServices, createApp, createServices } from "../src/index.js";
 
@@ -12,6 +13,8 @@ export const ALL_SCOPES: Scope[] = [
 	"templates:write",
 	"signing:read",
 	"signing:write",
+	"documents:read",
+	"documents:write",
 	"api_keys:read",
 	"api_keys:write",
 	"audit:read",
@@ -23,7 +26,10 @@ export interface TestWorld extends AppServices {
 
 export async function makeTestApp(): Promise<TestWorld> {
 	const db = await createInMemoryDatabase();
-	const services = createServices(db);
+	const services = createServices(db, {
+		storage: new MemoryStorageProvider(),
+		verifyBaseUrl: "https://verifyistic.com",
+	});
 	const app = createApp(services);
 	return { app, ...services };
 }
