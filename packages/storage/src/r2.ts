@@ -57,7 +57,23 @@ export class R2StorageProvider implements StorageProvider {
 	async get(key: string): Promise<StorageGetResult | null> {
 		const object = await this.bucket.get(key);
 		if (!object) return null;
-		const bytes = new Uint8Array(await object.body.arrayBuffer());
+		// Real R2 bodies are ReadableStreams; read via Response (Workers-compatible).
+		// Structural fakes in tests may expose arrayBuffer() directly.
+		const rawBody = object.body as unknown;
+		let buffer: ArrayBuffer;
+		if (rawBody instanceof ArrayBuffer) {
+			buffer = rawBody;
+		} else if (
+			typeof ReadableStream !== "undefined" &&
+			rawBody instanceof ReadableStream
+		) {
+			buffer = await new Response(rawBody).arrayBuffer();
+		} else {
+			buffer = await (
+				rawBody as { arrayBuffer(): Promise<ArrayBuffer> }
+			).arrayBuffer();
+		}
+		const bytes = new Uint8Array(buffer);
 		return {
 			body: bytes,
 			meta: { key, size: object.size, sha256: await sha256Hex(bytes) },

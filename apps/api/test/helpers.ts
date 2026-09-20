@@ -46,6 +46,9 @@ export async function makeTestApp(
 	const services = createServices(db, {
 		storage: new MemoryStorageProvider(),
 		verifyBaseUrl: "https://verifyistic.com",
+		// Test-only secrets for the billing routes (never real credentials).
+		paddleWebhookSecret: "launch-proof-secret-not-a-real-credential",
+		licenseSigningSecret: "launch-proof-secret-not-a-real-credential",
 		fetcher: async (url, init) => {
 			webhookCalls.push({ url, headers: init.headers, body: init.body });
 			return { ok: true, status: 200 };
