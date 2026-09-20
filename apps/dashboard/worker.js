@@ -136,10 +136,11 @@ function tm(s){return s?new Date(s).toLocaleDateString()+" "+new Date(s).toLocal
 
 function loadPaddle(cb){if(window.Paddle&&window.Paddle.Initialized){return cb();}
 var sc=document.createElement("script");sc.src="https://cdn.paddle.com/paddle/v2/paddle.js";
-sc.onload=function(){Paddle.Environment.set("live");Paddle.Initialize({token:PADDLE_CLIENT_TOKEN,checkout:{settings:{displayMode:"overlay"}}});cb();};
+sc.onload=function(){try{Paddle.Environment.set("live");Paddle.Initialize({token:PADDLE_CLIENT_TOKEN,checkout:{settings:{displayMode:"overlay"}}});cb();}catch(e){toast("Checkout could not initialize. Please try again.",true);}};
+sc.onerror=function(){toast("Checkout unavailable — Paddle failed to load.",true);};
 document.head.appendChild(sc);}
 window.upgrade=function(plan){var priceId=PRICES[plan];if(!priceId||!PADDLE_CLIENT_TOKEN){return toast("Checkout unavailable — client token missing.",true);}
-loadPaddle(function(){Paddle.Checkout.open({items:[{priceId:priceId,quantity:1}],customer:(ORG&&ORG.billing_email)?{email:ORG.billing_email}:undefined,customData:{organization_id:ORG.id,plan:plan}});});
+loadPaddle(function(){try{Paddle.Checkout.open({items:[{priceId:priceId,quantity:1}],settings:{displayMode:"overlay"},customer:(ORG&&ORG.billing_email)?{email:ORG.billing_email}:undefined,customData:{organization_id:ORG.id,plan:plan}});}catch(e){toast("Checkout could not open. Please try again.",true);}});
 var tries=0;var iv=setInterval(function(){tries++;__api("GET","/entitlements").then(function(j){
 var hit=(j.data||[]).some(function(e){return e.plan===plan&&e.status==="active";});
 if(hit){clearInterval(iv);toast("Plan active: "+plan);go("billing");}});if(tries>40){clearInterval(iv);}},4000);};
@@ -149,7 +150,7 @@ var plans=[["cloud_starter","Starter","$19/mo"],["cloud_range","Range","$49/mo"]
 document.getElementById("body_billing").innerHTML="<p class='muted' style='margin-bottom:14px'>Pick a plan — checkout opens in a popup. Entitlements activate automatically after payment.</p>"+
 plans.map(function(p){var isA=active[p[0]]==="active";
 return "<div class='card' style='margin-bottom:12px;display:flex;justify-content:space-between;align-items:center'><div><b>"+esc(p[1])+"</b> <span class='muted'>"+esc(p[2])+"</span></div>"+
-(isA?pill("active","g"):"<button class='btn' onclick=&quot;upgrade('"+p[0]+"')&quot;>Checkout</button>")+"</div>";}).join("");});}
+(isA?pill("active","g"):"<button class='btn' onclick=\"upgrade('"+p[0]+"')\">Checkout</button>")+"</div>";}).join("");});}
 function vOverview(){return Promise.all([__api("GET","/customers?limit=1"),__api("GET","/templates"),__api("GET","/signing-sessions"),__api("GET","/documents")]).then(function(r){
 var cust=r[0].meta,custHasMore=cust&&cust.has_more;var docs=r[3].data||[];
 document.getElementById("body_overview").innerHTML=
