@@ -74,7 +74,7 @@ describe("OpenAPI contract surface", () => {
 	it("serves human /v1/docs", async () => {
 		const res = await world.app.request("/v1/docs");
 		expect(res.status).toBe(200);
-		expect(await res.text()).toContain("Verifyistic API v1");
+		expect(await res.text()).toContain("Verifyistic API — v1 Reference");
 	});
 });
 

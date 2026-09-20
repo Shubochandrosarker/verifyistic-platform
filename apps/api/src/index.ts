@@ -161,17 +161,35 @@ export function createApp(
 	// Machine contract (doc 05 §1) — public.
 	v1.get("/openapi.json", (c) => c.json(OPENAPI_SPEC));
 
-	// Human docs — lightweight index over the machine contract.
+	// Human docs — branded Swagger UI over the machine contract.
 	v1.get("/docs", (c) =>
 		c.html(
-			`<!doctype html><html><head><meta charset="utf-8"><title>Verifyistic API docs</title>` +
-				"<style>body{font-family:-apple-system,sans-serif;max-width:720px;margin:48px auto;padding:0 16px;line-height:1.6}</style>" +
-				"</head><body><h1>Verifyistic API v1</h1>" +
-				"<p>Base: <code>/v1</code> · Auth: <code>Authorization: Bearer vfy_live_…</code></p>" +
-				`<p>Machine contract: <a href="/v1/openapi.json">openapi.json</a> (OpenAPI 3.1).</p>` +
-				"<p>Resources: sites, customers, templates, signing-sessions, documents, checkin, webhooks, api-keys, audit-events.</p>" +
-				`<p>Envelopes: success <code>{"data":…,"meta":{"request_id"}}</code>; error <code>{"error":{code,message,request_id}}</code>.</p>` +
-				"</body></html>",
+			`<!doctype html><html lang="en"><head><meta charset="utf-8"/>` +
+				`<meta name="viewport" content="width=device-width, initial-scale=1"/>` +
+				"<title>Verifyistic API — v1 Reference</title>" +
+				`<link rel="stylesheet" href="https://unpkg.com/swagger-ui-dist@5.17.14/swagger-ui.css"/>` +
+				"<style>" +
+				":root{--vfy-bg:#0b1622;--vfy-acc:#2fbf71}" +
+				"body{margin:0;background:var(--vfy-bg)}" +
+				".topbar{background:#0e1f31;border-bottom:2px solid var(--vfy-acc);padding:14px 24px;display:flex;align-items:center;gap:14px}" +
+				".topbar .logo{color:#e8f0f7;font:800 20px -apple-system,Segoe UI,sans-serif}.topbar .logo b{color:var(--vfy-acc)}" +
+				".topbar a{color:#8fd6b2;font:600 14px -apple-system,sans-serif;margin-left:auto}" +
+				".swagger-ui .topbar{display:none}" +
+				".swagger-ui .scheme-container{background:#f4f7fa;box-shadow:none;border-bottom:1px solid #dbe4ec}" +
+				".swagger-ui .btn.authorize{background-color:var(--vfy-acc);border-color:var(--vfy-acc)}" +
+				"</style></head><body>" +
+				`<div class="topbar"><span class="logo">Verify<b>istic</b> API &#183; v1</span>` +
+				`<a href="https://verifyistic.com">verifyistic.com</a></div>` +
+				`<div id="swagger-ui"></div>` +
+				`<script src="https://unpkg.com/swagger-ui-dist@5.17.14/swagger-ui-bundle.js" crossorigin><` +
+				"/script>" +
+				"<script>" +
+				"window.onload=function(){window.ui=SwaggerUIBundle({" +
+				`url:"/v1/openapi.json",dom_id:"#swagger-ui",deepLinking:true,` +
+				"persistAuthorization:true,tryItOutEnabled:true," +
+				`presets:[SwaggerUIBundle.presets.apis],layout:"BaseLayout"});};` +
+				"<" +
+				"/script></body></html>",
 		),
 	);
 
