@@ -12,9 +12,9 @@ import { type AppServices, createServices } from "./deps.js";
 import { fail, failInternal, failNotFound, ok } from "./lib/envelope.js";
 import { OPENAPI_SPEC } from "./lib/openapi.js";
 import { createAuthMiddleware } from "./middleware/auth.js";
-import { authRoutes } from "./routes/auth.js";
 import { apiKeysRoutes } from "./routes/api-keys.js";
 import { auditRoutes } from "./routes/audit.js";
+import { authRoutes } from "./routes/auth.js";
 import {
 	billingRoutes,
 	downloadRoutes,
