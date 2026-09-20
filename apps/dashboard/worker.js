@@ -82,6 +82,7 @@ label{font-size:12.5px;color:var(--mut);display:block;margin-bottom:4px}
 <div id="toast"></div>
 
 <script>
+const API = "https://api.verifyistic.com/v1";
 (function(){"use strict";
 var KEY=localStorage.getItem("vfy_key")||"",ORG=null;
 var PRICES={cloud_starter:"pri_01m2xsd262rezepyztce1xp8dc",cloud_range:"pri_01m2xsd29s4xha041jffh2ytgz",cloud_range_pro:"pri_01m2xsd2dtd7d9v90537425ent",cloud_business:"pri_01m2xsd2gn7q813afq1e283wz8",self_hosted_range:"pri_01m2xsd2n0rz24dnbt7192n769",self_hosted_pro:"pri_01m2xsd2r6n08rmk0ka9r6kyam",self_hosted_multi:"pri_01m2xsd2v57qhde8575ez4jw87",updates_support:"pri_01m2xsd2yr5040y9cqz14ybszp"};
