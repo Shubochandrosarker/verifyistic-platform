@@ -16,18 +16,14 @@ export function paddleWebhookRoutes(deps: AppServices) {
 	routes.post("/paddle/webhook", async (c) => {
 		const secret = deps.billingSecrets.paddleWebhookSecret;
 		const body = await c.req.text();
-		const timestamp =
-			c.req
-				.header("Paddle-Signature")
-				?.split(",")
-				?.find((p) => p.startsWith("ts="))
-				?.slice(3) ?? "";
-		const signature =
-			c.req
-				.header("Paddle-Signature")
-				?.split(",")
-				?.find((p) => p.startsWith("h1="))
-				?.slice(3) ?? "";
+		// Paddle header format: ts=<unix>;h1=<hex> (semicolon-separated; comma seen
+		// from some proxies — accept both). Multiple h1 values can appear during
+		// secret rotation; any valid one authenticates the delivery.
+		const parts = (c.req.header("Paddle-Signature") ?? "").split(/[;,]/);
+		const timestamp = parts.find((p) => p.startsWith("ts="))?.slice(3) ?? "";
+		const signatures = parts
+			.filter((p) => p.startsWith("h1="))
+			.map((p) => p.slice(3));
 		if (!secret) {
 			// Not configured yet: accept nothing rather than trusting unsigned events.
 			throw new ApiError(
@@ -35,7 +31,11 @@ export function paddleWebhookRoutes(deps: AppServices) {
 				"Billing webhooks are not configured.",
 			);
 		}
-		if (!verifyPaddleSignature({ secret, timestamp, body, signature })) {
+		if (
+			!signatures.some((sig) =>
+				verifyPaddleSignature({ secret, timestamp, body, signature: sig }),
+			)
+		) {
 			throw new ApiError("unauthorized", "Invalid Paddle signature.");
 		}
 		const event = JSON.parse(body) as import("../lib/billing.js").PaddleEvent;
