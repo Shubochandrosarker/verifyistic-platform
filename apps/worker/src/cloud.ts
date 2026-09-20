@@ -7,7 +7,11 @@ import { type AppServices, createServices } from "@verifyistic/api";
  */
 import { type D1DatabaseLike, createD1Kysely } from "@verifyistic/database/d1";
 import { type R2BucketBinding, R2StorageProvider } from "@verifyistic/storage";
-import { ResendEmailSender, SmtpEmailSender } from "@verifyistic/webhooks";
+import {
+	PostmarkEmailSender,
+	ResendEmailSender,
+	SmtpEmailSender,
+} from "@verifyistic/webhooks";
 import { runJobsOnce } from "./index.js";
 import { CloudflareSmtpConnector } from "./smtp.js";
 
@@ -18,6 +22,10 @@ interface Env {
 	VERIFY_BASE_URL?: string;
 	SIGNER_BASE_URL?: string;
 	WEBHOOK_ENCRYPTION_KEY?: string;
+	EMAIL_PROVIDER?: "postmark" | "smtp" | "resend";
+	POSTMARK_SERVER_TOKEN?: string;
+	POSTMARK_FROM?: string;
+	POSTMARK_MESSAGE_STREAM?: string;
 	RESEND_API_KEY?: string;
 	RESEND_FROM?: string;
 	SMTP_HOST?: string;
@@ -35,6 +43,33 @@ interface WorkerExecutionContext {
 
 function createCloudServices(env: Env): AppServices {
 	const db = createD1Kysely(env.DB);
+	const emailProvider =
+		env.EMAIL_PROVIDER ?? (env.SMTP_HOST ? "smtp" : "resend");
+	const emailSender =
+		emailProvider === "postmark"
+			? new PostmarkEmailSender(
+					env.POSTMARK_SERVER_TOKEN ?? "",
+					env.POSTMARK_FROM ?? "Verifyistic <noreply@verifyistic.com>",
+					env.POSTMARK_MESSAGE_STREAM ?? "outbound",
+				)
+			: emailProvider === "smtp"
+				? new SmtpEmailSender({
+						connector: new CloudflareSmtpConnector(),
+						host: env.SMTP_HOST ?? "",
+						port: Number(env.SMTP_PORT ?? "465"),
+						mode: env.SMTP_MODE ?? "tls",
+						username: env.SMTP_USER ?? "",
+						password: env.SMTP_PASSWORD ?? "",
+						from:
+							env.SMTP_FROM ??
+							env.RESEND_FROM ??
+							"Verifyistic <noreply@verifyistic.com>",
+						heloName: env.SMTP_HELO,
+					})
+				: new ResendEmailSender(
+						env.RESEND_API_KEY ?? "",
+						env.RESEND_FROM ?? "Verifyistic <noreply@verifyistic.com>",
+					);
 	return createServices(db, {
 		storage: new R2StorageProvider(env.VAULT),
 		verifyBaseUrl: env.VERIFY_BASE_URL ?? "https://api.verifyistic.com",
@@ -48,24 +83,7 @@ function createCloudServices(env: Env): AppServices {
 				requestId: response.headers.get("X-Request-ID") ?? undefined,
 			};
 		},
-		emailSender: env.SMTP_HOST
-			? new SmtpEmailSender({
-					connector: new CloudflareSmtpConnector(),
-					host: env.SMTP_HOST,
-					port: Number(env.SMTP_PORT ?? "465"),
-					mode: env.SMTP_MODE ?? "tls",
-					username: env.SMTP_USER ?? "",
-					password: env.SMTP_PASSWORD ?? "",
-					from:
-						env.SMTP_FROM ??
-						env.RESEND_FROM ??
-						"Verifyistic <noreply@verifyistic.com>",
-					heloName: env.SMTP_HELO,
-				})
-			: new ResendEmailSender(
-					env.RESEND_API_KEY ?? "",
-					env.RESEND_FROM ?? "Verifyistic <noreply@verifyistic.com>",
-				),
+		emailSender,
 	});
 }
 

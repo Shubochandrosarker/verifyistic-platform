@@ -1,36 +1,34 @@
 # Verifyistic production email
 
 The cloud worker sends signing invitations from the DB-backed email outbox. The
-production adapter is authenticated SMTP, not a browser request to the Sendlr
-dashboard. `apps/worker/wrangler.toml` is preconfigured for:
+production adapter is Postmark's transactional API. The Worker never sends
+through a browser request to the MailRivo/Sendlr dashboard. The production
+configuration is:
 
-- host: `mail.wpistic.com`
-- implicit TLS port: `465`
-- envelope/header sender: `Verifyistic <noreply@verifyistic.com>`
+- provider: `postmark`
+- message stream: `outbound`
+- sender: `Verifyistic <noreply@verifyistic.com>`
 
 The Worker secrets are set at deployment time and must never be committed:
 
 ```text
-SMTP_USER
-SMTP_PASSWORD
+POSTMARK_SERVER_TOKEN
 WEBHOOK_ENCRYPTION_KEY
 ```
 
-Before deploying those secrets, verify that `mail.wpistic.com` is DNS-only and
-resolves directly to the VPS SMTP service. Cloudflare's HTTP proxy/tunnel route
-for the Sendlr web UI is not an SMTP service and does not proxy SMTP on 465.
-The SMTP daemon must advertise `AUTH PLAIN` or `AUTH LOGIN` over implicit TLS on
-465. Port 587 can be used by changing `SMTP_MODE` to `starttls` and
-`SMTP_PORT` to `587`.
+Postmark must have `verifyistic.com` verified with SPF and DKIM. Publish a
+DMARC policy for the domain before sending production traffic. The sender and
+message stream must remain transactional; bulk campaigns belong in a separate
+provider stream and should not share the signing-email reputation.
 
 The release gate for email is:
 
-1. The VPS has a real SMTP listener on the selected port.
-2. The sender mailbox exists and authenticates successfully.
-3. SPF, DKIM, and DMARC are published for the sending domain.
-4. `SMTP_USER` and `SMTP_PASSWORD` are injected with `wrangler secret put`.
-5. A real Verifyistic signing invitation reaches a controlled test mailbox and
+1. Postmark has verified the sending domain and sender.
+2. SPF, DKIM, and DMARC are published for the sending domain.
+3. `POSTMARK_SERVER_TOKEN` is injected with `wrangler secret put`.
+4. A real Verifyistic signing invitation reaches a controlled test mailbox and
    the corresponding D1 `email_outbox` row becomes `sent`.
 
-Until these checks pass, the Worker intentionally retries the outbox and does
-not claim successful delivery.
+The repository still includes an authenticated SMTP adapter as a compatibility
+fallback, but production selection is explicit through `EMAIL_PROVIDER` and is
+currently set to Postmark.

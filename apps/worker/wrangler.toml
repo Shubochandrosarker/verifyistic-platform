@@ -8,12 +8,9 @@ VERIFYISTIC_MODE = "cloud"
 ENVIRONMENT = "production"
 VERIFY_BASE_URL = "https://api.verifyistic.com"
 SIGNER_BASE_URL = "https://api.verifyistic.com"
-RESEND_FROM = "Verifyistic <noreply@verifyistic.com>"
-SMTP_HOST = "mail.wpistic.com"
-SMTP_PORT = "465"
-SMTP_MODE = "tls"
-SMTP_FROM = "Verifyistic <noreply@verifyistic.com>"
-SMTP_HELO = "verifyistic.com"
+EMAIL_PROVIDER = "postmark"
+POSTMARK_FROM = "Verifyistic <noreply@verifyistic.com>"
+POSTMARK_MESSAGE_STREAM = "outbound"
 
 [triggers]
 crons = ["* * * * *"]
@@ -28,4 +25,5 @@ binding = "VAULT"
 bucket_name = "verifyistic"
 
 # Runtime secrets (set with `wrangler secret put`):
-# WEBHOOK_ENCRYPTION_KEY, RESEND_API_KEY (legacy), SMTP_USER, SMTP_PASSWORD
+# WEBHOOK_ENCRYPTION_KEY, POSTMARK_SERVER_TOKEN
+# Legacy fallback secrets: RESEND_API_KEY, SMTP_USER, SMTP_PASSWORD

@@ -1,7 +1,8 @@
 /**
  * Email outbox + sender adapter (Phase 6). Emails are queued in the DB (same retry
  * discipline as webhooks) and pumped by the worker. The sender is injected —
- * ConsoleEmailSender for dev/tests and ResendEmailSender/SmtpEmailSender for
+ * ConsoleEmailSender for dev/tests and PostmarkEmailSender/SmtpEmailSender/
+ * ResendEmailSender for
  * cloud delivery.
  */
 import { newId } from "@verifyistic/core";
@@ -110,6 +111,49 @@ export interface EmailSender {
 		template: string;
 		payload: Record<string, unknown>;
 	}): Promise<void>;
+}
+
+export class PostmarkEmailSender implements EmailSender {
+	constructor(
+		private readonly serverToken: string,
+		private readonly from: string,
+		private readonly messageStream = "outbound",
+		private readonly fetcher: typeof fetch = fetch,
+	) {}
+
+	async send(email: {
+		to: string;
+		template: string;
+		payload: Record<string, unknown>;
+	}): Promise<void> {
+		if (!this.serverToken) {
+			throw new Error("POSTMARK_SERVER_TOKEN is not configured.");
+		}
+		const rendered = renderTransactionalEmail(email);
+		const from = parseMailbox(this.from, "POSTMARK_FROM");
+		const to = parseMailbox(email.to, "recipient");
+		const response = await this.fetcher("https://api.postmarkapp.com/email", {
+			method: "POST",
+			headers: {
+				"X-Postmark-Server-Token": this.serverToken,
+				"Content-Type": "application/json",
+			},
+			body: JSON.stringify({
+				From: from.header,
+				To: to.address,
+				Subject: rendered.subject,
+				TextBody: rendered.text,
+				HtmlBody: rendered.html,
+				MessageStream: this.messageStream,
+			}),
+		});
+		if (!response.ok) {
+			const detail = (await response.text()).slice(0, 300);
+			throw new Error(
+				`Postmark rejected email (${response.status}): ${detail}`,
+			);
+		}
+	}
 }
 
 export interface SmtpConnection {

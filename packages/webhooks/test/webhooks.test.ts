@@ -3,6 +3,7 @@ import { createInMemoryDatabase } from "@verifyistic/database/testing";
 import type { TenantContext } from "@verifyistic/tenancy";
 import { describe, expect, it } from "vitest";
 import {
+	PostmarkEmailSender,
 	ResendEmailSender,
 	SmtpEmailSender,
 	WebhookService,
@@ -125,6 +126,63 @@ describe("ResendEmailSender", () => {
 		expect(body.subject).toContain("Range <A>");
 		expect(body.html).toContain("Range &lt;A&gt;");
 		expect(body.html).toContain("a=1&amp;b=2");
+	});
+});
+
+describe("PostmarkEmailSender", () => {
+	it("sends an escaped signing invitation through the transactional stream", async () => {
+		let captured: { url: string; init: RequestInit } | undefined;
+		const sender = new PostmarkEmailSender(
+			"pm_test_token",
+			"Verifyistic <noreply@example.com>",
+			"outbound",
+			async (url, init) => {
+				captured = { url: String(url), init: init ?? {} };
+				return new Response(JSON.stringify({ MessageID: "email_1" }), {
+					status: 200,
+				});
+			},
+		);
+
+		await sender.send({
+			to: "signer@example.com",
+			template: "signing_session_invitation",
+			payload: {
+				business: "Range <A>",
+				signer_url: "https://api.example.com/s/token?a=1&b=2",
+			},
+		});
+
+		expect(captured?.url).toBe("https://api.postmarkapp.com/email");
+		expect(captured?.init.headers).toMatchObject({
+			"X-Postmark-Server-Token": "pm_test_token",
+			"Content-Type": "application/json",
+		});
+		const body = JSON.parse(String(captured?.init.body)) as {
+			From: string;
+			To: string;
+			Subject: string;
+			TextBody: string;
+			HtmlBody: string;
+			MessageStream: string;
+		};
+		expect(body.From).toBe("Verifyistic <noreply@example.com>");
+		expect(body.To).toBe("signer@example.com");
+		expect(body.Subject).toContain("Range <A>");
+		expect(body.HtmlBody).toContain("Range &lt;A&gt;");
+		expect(body.HtmlBody).toContain("a=1&amp;b=2");
+		expect(body.MessageStream).toBe("outbound");
+	});
+
+	it("fails closed when the server token is missing", async () => {
+		const sender = new PostmarkEmailSender("", "noreply@example.com");
+		await expect(
+			sender.send({
+				to: "signer@example.com",
+				template: "notification",
+				payload: {},
+			}),
+		).rejects.toThrow("POSTMARK_SERVER_TOKEN is not configured.");
 	});
 });
 
