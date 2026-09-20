@@ -12,6 +12,7 @@ export interface Env {
 	VAULT: R2BucketBinding;
 	WEBHOOK_ENCRYPTION_KEY?: string;
 	VERIFY_BASE_URL?: string;
+	SIGNER_BASE_URL?: string;
 	PADDLE_WEBHOOK_SECRET?: string;
 	LICENSE_SIGNING_SECRET?: string;
 }
@@ -23,7 +24,8 @@ function getServices(env: Env): AppServices {
 		const db = createD1Kysely(env.DB);
 		cached = createServices(db, {
 			storage: new R2StorageProvider(env.VAULT),
-			verifyBaseUrl: env.VERIFY_BASE_URL ?? "https://verifyistic.com",
+			verifyBaseUrl: env.VERIFY_BASE_URL ?? "https://api.verifyistic.com",
+			signerBaseUrl: env.SIGNER_BASE_URL ?? "https://api.verifyistic.com",
 			webhookEncryptionKey: env.WEBHOOK_ENCRYPTION_KEY ?? "",
 			paddleWebhookSecret: env.PADDLE_WEBHOOK_SECRET ?? "",
 			licenseSigningSecret: env.LICENSE_SIGNING_SECRET ?? "",

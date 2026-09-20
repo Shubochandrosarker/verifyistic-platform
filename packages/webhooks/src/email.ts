@@ -1,7 +1,7 @@
 /**
  * Email outbox + sender adapter (Phase 6). Emails are queued in the DB (same retry
  * discipline as webhooks) and pumped by the worker. The sender is injected —
- * ConsoleEmailSender for dev/tests; a provider adapter lands with deployment.
+ * ConsoleEmailSender for dev/tests and ResendEmailSender for the cloud runtime.
  */
 import { newId } from "@verifyistic/core";
 import type { Database, EmailOutboxMessage } from "@verifyistic/database";
@@ -120,4 +120,73 @@ export class ConsoleEmailSender implements EmailSender {
 	}): Promise<void> {
 		console.log("email", { to: email.to, template: email.template });
 	}
+}
+
+/**
+ * Resend delivery adapter for the Cloudflare worker.
+ *
+ * The API key is runtime-only. Templates stay in the outbox payload so the
+ * worker can retry without re-reading the signing session or exposing tokens.
+ */
+export class ResendEmailSender implements EmailSender {
+	constructor(
+		private readonly apiKey: string,
+		private readonly from: string,
+		private readonly fetcher: typeof fetch = fetch,
+	) {}
+
+	async send(email: {
+		to: string;
+		template: string;
+		payload: Record<string, unknown>;
+	}): Promise<void> {
+		if (!this.apiKey) throw new Error("RESEND_API_KEY is not configured.");
+		const signerUrl =
+			typeof email.payload.signer_url === "string"
+				? email.payload.signer_url
+				: "";
+		const business =
+			typeof email.payload.business === "string"
+				? email.payload.business
+				: "Verifyistic customer";
+		const subject =
+			email.template === "signing_session_invitation"
+				? `${business} sent you a document to sign`
+				: "Verifyistic notification";
+		const html = signerUrl
+			? `<p>${escapeHtml(business)} sent you a document to review and sign.</p><p><a href="${escapeHtml(signerUrl)}">Open the secure signing link</a></p><p>This link is private and expires automatically.</p>`
+			: `<p>${escapeHtml(business)} sent you a Verifyistic notification.</p>`;
+
+		const response = await this.fetcher("https://api.resend.com/emails", {
+			method: "POST",
+			headers: {
+				Authorization: `Bearer ${this.apiKey}`,
+				"Content-Type": "application/json",
+			},
+			body: JSON.stringify({
+				from: this.from,
+				to: [email.to],
+				subject,
+				html,
+			}),
+		});
+		if (!response.ok) {
+			const detail = (await response.text()).slice(0, 300);
+			throw new Error(`Resend rejected email (${response.status}): ${detail}`);
+		}
+	}
+}
+
+function escapeHtml(value: string): string {
+	return value.replace(
+		/[&<>"']/g,
+		(character) =>
+			({
+				"&": "&amp;",
+				"<": "&lt;",
+				">": "&gt;",
+				'"': "&quot;",
+				"'": "&#39;",
+			})[character] ?? character,
+	);
 }

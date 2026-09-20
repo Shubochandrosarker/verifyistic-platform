@@ -252,16 +252,15 @@ describe("organization + audit — cross-tenant matrix", () => {
 			data: { user_id: string }[];
 		};
 		expect(members.data.map((m) => m.user_id)).toEqual(["wp_user_1"]);
-		expect(
-			(
-				await authedRequest(
-					world.app,
-					"GET",
-					"/v1/organization/members",
-					orgB.keyRaw,
-				)
-			).json() as Promise<{ data: unknown[] }>,
-		).resolves.toMatchObject({ data: [] });
+		const membersB = (await (
+			await authedRequest(
+				world.app,
+				"GET",
+				"/v1/organization/members",
+				orgB.keyRaw,
+			)
+		).json()) as { data: unknown[] };
+		expect(membersB).toMatchObject({ data: [] });
 	});
 
 	it("audit events are tenant-scoped and the chain stays valid", async () => {

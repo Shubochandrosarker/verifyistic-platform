@@ -3,6 +3,7 @@ import { createInMemoryDatabase } from "@verifyistic/database/testing";
 import type { TenantContext } from "@verifyistic/tenancy";
 import { describe, expect, it } from "vitest";
 import {
+	ResendEmailSender,
 	WebhookService,
 	decryptSecret,
 	encryptSecret,
@@ -65,6 +66,44 @@ describe("HMAC signature (route contract v1)", () => {
 	});
 });
 
+describe("ResendEmailSender", () => {
+	it("sends an escaped signing invitation through the Resend API", async () => {
+		let captured: { url: string; init: RequestInit } | undefined;
+		const sender = new ResendEmailSender(
+			"re_test_key",
+			"Verifyistic <noreply@example.com>",
+			async (url, init) => {
+				captured = { url, init };
+				return new Response(JSON.stringify({ id: "email_1" }), { status: 200 });
+			},
+		);
+
+		await sender.send({
+			to: "signer@example.com",
+			template: "signing_session_invitation",
+			payload: {
+				business: "Range <A>",
+				signer_url: "https://api.example.com/s/token?a=1&b=2",
+			},
+		});
+
+		expect(captured?.url).toBe("https://api.resend.com/emails");
+		expect(captured?.init.headers).toMatchObject({
+			Authorization: "Bearer re_test_key",
+			"Content-Type": "application/json",
+		});
+		const body = JSON.parse(String(captured?.init.body)) as {
+			to: string[];
+			subject: string;
+			html: string;
+		};
+		expect(body.to).toEqual(["signer@example.com"]);
+		expect(body.subject).toContain("Range <A>");
+		expect(body.html).toContain("Range &lt;A&gt;");
+		expect(body.html).toContain("a=1&amp;b=2");
+	});
+});
+
 describe("WebhookService delivery engine", () => {
 	async function makeService(
 		fetcher?: ConstructorParameters<typeof WebhookService>[1]["fetcher"],
@@ -121,6 +160,14 @@ describe("WebhookService delivery engine", () => {
 
 		// Receiver-side verification of the signature contract.
 		const body = captured!.body;
+		const payload = JSON.parse(body) as {
+			event_id: string;
+			event: string;
+			data: { document_id: string };
+		};
+		expect(payload.event).toBe("document.generated");
+		expect(payload.data.document_id).toBe("doc_1");
+		expect(payload.event_id).toBe(captured!.headers["Verifyistic-Event-ID"]);
 		const timestamp = Number(captured!.headers["Verifyistic-Timestamp"]);
 		const expected = createHmac("sha256", secret)
 			.update(`${timestamp}.${body}`)

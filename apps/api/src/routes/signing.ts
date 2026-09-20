@@ -66,6 +66,10 @@ function toPublicSession(record: {
 
 export function signingRoutes(deps: AppServices) {
 	const routes = new Hono();
+	const signerUrl = (token: string) =>
+		deps.signerBaseUrl
+			? new URL(`/s/${token}`, deps.signerBaseUrl).toString()
+			: `/s/${token}`;
 
 	routes.post("/", async (c) => {
 		const { tenant } = requireScope(c, "signing:write");
@@ -148,7 +152,7 @@ export function signingRoutes(deps: AppServices) {
 					to: customer.email,
 					template: "signing_session_invitation",
 					payload: {
-						signer_url: `/s/${token}`,
+						signer_url: signerUrl(token),
 						business: (await deps.repos.getOrganization(tenant))?.name ?? "",
 						document_title: session.template_version_id,
 					},
@@ -175,7 +179,7 @@ export function signingRoutes(deps: AppServices) {
 					required: p.required === 1,
 				})),
 				// The raw signer URL is returned exactly once — never stored, never logged.
-				signer_url: `/s/${token}`,
+				signer_url: signerUrl(token),
 				token,
 			},
 			meta: { request_id: c.get("requestId"), created: true },

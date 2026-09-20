@@ -1,6 +1,6 @@
-name = "verifyistic-api-gateway"
-main = "src/worker.ts"
-compatibility_date = "2026-09-01"
+name = "verifyistic-worker"
+main = "src/cloud.ts"
+compatibility_date = "2026-09-20"
 compatibility_flags = ["nodejs_compat"]
 
 [vars]
@@ -8,6 +8,10 @@ VERIFYISTIC_MODE = "cloud"
 ENVIRONMENT = "production"
 VERIFY_BASE_URL = "https://api.verifyistic.com"
 SIGNER_BASE_URL = "https://api.verifyistic.com"
+RESEND_FROM = "Verifyistic <noreply@verifyistic.com>"
+
+[triggers]
+crons = ["* * * * *"]
 
 [[d1_databases]]
 binding = "DB"
@@ -18,4 +22,5 @@ database_id = "f432985b-3644-4cf7-b418-34722f88cc45"
 binding = "VAULT"
 bucket_name = "verifyistic"
 
-# Secrets (runtime): WEBHOOK_ENCRYPTION_KEY, PADDLE_WEBHOOK_SECRET, LICENSE_SIGNING_SECRET via `wrangler secret put`.
+# Runtime secrets (set with `wrangler secret put`):
+# WEBHOOK_ENCRYPTION_KEY, RESEND_API_KEY

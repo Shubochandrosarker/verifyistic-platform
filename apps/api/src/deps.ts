@@ -17,6 +17,7 @@ import {
 	type DeliveryFetcher,
 	EmailOutbox,
 	type EmailSender,
+	ResendEmailSender,
 	WebhookService,
 } from "@verifyistic/webhooks";
 import type { Kysely } from "kysely";
@@ -41,6 +42,7 @@ export interface AppServices {
 	webhooks: WebhookService;
 	emailOutbox: EmailOutbox;
 	emailSender: EmailSender;
+	signerBaseUrl: string | null;
 	idempotencyStore: IdempotencyStore;
 	billing: BillingService;
 	billingSecrets: { paddleWebhookSecret: string; licenseSigningSecret: string };
@@ -50,6 +52,8 @@ export interface ServiceOptions {
 	/** Defaults to a local filesystem store under ./local/documents (self-hosted/dev). */
 	storage?: StorageProvider;
 	verifyBaseUrl?: string;
+	/** Public origin hosting `/s/{token}`. Null keeps local/test responses relative. */
+	signerBaseUrl?: string;
 	/** Runtime secret for webhook-signing-secret encryption at rest (doc 06 §10). */
 	webhookEncryptionKey?: string;
 	fetcher?: DeliveryFetcher;
@@ -86,6 +90,12 @@ export function createServices(
 				? process.env?.VERIFY_BASE_URL
 				: undefined),
 	});
+	const signerBaseUrl =
+		options.signerBaseUrl ??
+		(typeof process !== "undefined"
+			? process.env?.SIGNER_BASE_URL
+			: undefined) ??
+		null;
 	const webhookEncryptionKey =
 		options.webhookEncryptionKey ??
 		(typeof process !== "undefined"
@@ -95,7 +105,14 @@ export function createServices(
 		encryptionKey: webhookEncryptionKey || "insecure-dev-key",
 		fetcher: options.fetcher,
 	});
-	const emailSender = options.emailSender ?? new ConsoleEmailSender();
+	const emailSender =
+		options.emailSender ??
+		(typeof process !== "undefined" && process.env?.RESEND_API_KEY
+			? new ResendEmailSender(
+					process.env.RESEND_API_KEY,
+					process.env.RESEND_FROM ?? "Verifyistic <noreply@verifyistic.com>",
+				)
+			: new ConsoleEmailSender());
 	const idempotencyStore = new IdempotencyStore(db);
 	return {
 		db,
@@ -111,6 +128,7 @@ export function createServices(
 		webhooks,
 		emailOutbox: new EmailOutbox(db),
 		emailSender,
+		signerBaseUrl,
 		idempotencyStore,
 		billing: new BillingService(db),
 		billingSecrets: {

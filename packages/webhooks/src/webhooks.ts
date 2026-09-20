@@ -169,7 +169,13 @@ export class WebhookService {
 					endpoint_id: endpoint.id,
 					event_id: eventId,
 					event_type: eventType,
-					payload_json: JSON.stringify({ event: eventType, data: payload }),
+					// Include the stable event id in the signed body as well as the
+					// transport header. Receivers can deduplicate without trusting headers.
+					payload_json: JSON.stringify({
+						event_id: eventId,
+						event: eventType,
+						data: payload,
+					}),
 					attempt: 0,
 					max_attempts: RETRY_DELAYS_SECONDS.length + 1,
 					status: "pending",

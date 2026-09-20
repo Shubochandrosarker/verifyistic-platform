@@ -87,6 +87,12 @@ importers:
       '@verifyistic/database':
         specifier: workspace:*
         version: link:../../packages/database
+      '@verifyistic/storage':
+        specifier: workspace:*
+        version: link:../../packages/storage
+      '@verifyistic/webhooks':
+        specifier: workspace:*
+        version: link:../../packages/webhooks
       kysely:
         specifier: ^0.28.0
         version: 0.28.17
