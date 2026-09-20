@@ -86,7 +86,8 @@ label{font-size:12.5px;color:var(--mut);display:block;margin-bottom:4px}
 var KEY=localStorage.getItem("vfy_key")||"",ORG=null;
 var PRICES={cloud_starter:"pri_01m2xsd262rezepyztce1xp8dc",cloud_range:"pri_01m2xsd29s4xha041jffh2ytgz",cloud_range_pro:"pri_01m2xsd2dtd7d9v90537425ent",cloud_business:"pri_01m2xsd2gn7q813afq1e283wz8",self_hosted_range:"pri_01m2xsd2n0rz24dnbt7192n769",self_hosted_pro:"pri_01m2xsd2r6n08rmk0ka9r6kyam",self_hosted_multi:"pri_01m2xsd2v57qhde8575ez4jw87",updates_support:"pri_01m2xsd2yr5040y9cqz14ybszp"};
 var PLAN=new URLSearchParams(location.hash.slice(1)).get("plan")||null;
-var PADDLE_CLIENT_TOKEN=window.PADDLE_CLIENT_TOKEN||"";
+var __VFY_PADDLE_CLIENT_TOKEN__="";
+var PADDLE_CLIENT_TOKEN=__VFY_PADDLE_CLIENT_TOKEN__||"";
 var NAV=[
 ["overview","Overview"],["billing","Billing & Plans"],["customers","Customers"],["templates","Templates"],
 ["sessions","Signing Requests"],["documents","Documents"],["keys","API Keys"],["webhooks","Webhooks"]];
@@ -228,13 +229,27 @@ if(KEY){__api("GET","/organization").then(function(j){ORG=j.data;boot();}).catch
 </body>
 </html>`;
 
+const SECURITY_HEADERS = {
+	"Content-Type": "text/html; charset=utf-8",
+	"Cache-Control": "no-store",
+	"X-Content-Type-Options": "nosniff",
+	"Referrer-Policy": "no-referrer",
+	"X-Frame-Options": "DENY",
+	"Permissions-Policy": "camera=(), microphone=(), geolocation=()",
+	"Content-Security-Policy":
+		"default-src 'none'; base-uri 'none'; form-action 'self'; frame-ancestors 'none'; script-src 'self' 'unsafe-inline' https://cdn.paddle.com; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self' https://api.verifyistic.com https://cdn.paddle.com https://*.paddle.com; frame-src https://*.paddle.com; font-src 'self' data:; object-src 'none'",
+};
+
 export default {
-	async fetch() {
-		return new Response(PAGE, {
-			headers: {
-				"Content-Type": "text/html; charset=utf-8",
-				"Cache-Control": "public, max-age=120",
-			},
-		});
+	async fetch(_request, env) {
+		const token = JSON.stringify(env.PADDLE_CLIENT_TOKEN ?? "").replace(
+			/</g,
+			"\\u003c",
+		);
+		const page = PAGE.replace(
+			'var __VFY_PADDLE_CLIENT_TOKEN__="";',
+			`var __VFY_PADDLE_CLIENT_TOKEN__=${token};`,
+		);
+		return new Response(page, { headers: SECURITY_HEADERS });
 	},
 };

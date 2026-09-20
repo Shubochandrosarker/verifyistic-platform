@@ -11,6 +11,8 @@
 	"dependencies": {
 		"@verifyistic/api": "workspace:*",
 		"@verifyistic/database": "workspace:*",
+		"@verifyistic/storage": "workspace:*",
+		"@verifyistic/webhooks": "workspace:*",
 		"kysely": "^0.28.0"
 	}
 }

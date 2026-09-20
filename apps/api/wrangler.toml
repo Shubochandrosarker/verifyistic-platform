@@ -11,6 +11,8 @@ routes = [
 [vars]
 VERIFYISTIC_MODE = "cloud"
 ENVIRONMENT = "production"
+VERIFY_BASE_URL = "https://api.verifyistic.com"
+SIGNER_BASE_URL = "https://api.verifyistic.com"
 
 [[d1_databases]]
 binding = "DB"
@@ -19,6 +21,6 @@ database_id = "f432985b-3644-4cf7-b418-34722f88cc45"
 
 [[r2_buckets]]
 binding = "VAULT"
-bucket_name = "verifyistic-staging-private"
+bucket_name = "verifyistic"
 
 # Secrets (runtime): WEBHOOK_ENCRYPTION_KEY, PADDLE_WEBHOOK_SECRET, LICENSE_SIGNING_SECRET via `wrangler secret put`.
