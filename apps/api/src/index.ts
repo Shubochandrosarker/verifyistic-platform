@@ -8,6 +8,7 @@ import { ApiError, newRequestId } from "@verifyistic/core";
  * never from request payloads (ADR-003). Cross-tenant ids read as not-found.
  */
 import { Hono } from "hono";
+import { cors } from "hono/cors";
 import { type AppServices, createServices } from "./deps.js";
 import { fail, failInternal, failNotFound, ok } from "./lib/envelope.js";
 import { OPENAPI_SPEC } from "./lib/openapi.js";
@@ -77,6 +78,28 @@ export function createApp(
 		readPerMin: options.rateLimits?.readPerMin ?? 300,
 		writePerMin: options.rateLimits?.writePerMin ?? 120,
 	});
+
+	// CORS (Phase 14): the dashboard on app.verifyistic.com calls this API
+	// cross-origin — browsers need preflight responses or every fetch dies.
+	app.use(
+		"*",
+		cors({
+			origin: [
+				"https://app.verifyistic.com",
+				"https://verifyistic.com",
+				"https://www.verifyistic.com",
+			],
+			allowHeaders: [
+				"Authorization",
+				"Content-Type",
+				"Idempotency-Key",
+				"X-Request-ID",
+			],
+			allowMethods: ["GET", "POST", "PATCH", "DELETE", "OPTIONS"],
+			exposeHeaders: ["X-Request-ID"],
+			maxAge: 86400,
+		}),
+	);
 
 	// Request id: honor a well-formed client id, else mint one. Always echoed back.
 	app.use("*", async (c, next) => {
