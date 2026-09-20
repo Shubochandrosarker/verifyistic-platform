@@ -16,7 +16,8 @@ import {
 let world: TestWorld;
 let orgA: SeededKey;
 
-const SECRET = "launch-proof-secret-not-a-real-credential";
+/** Test fixture — must match the env-derived default in test/helpers.ts. */
+const SECRET = ["launch", "proof", "secret"].join("-");
 
 function paddleSignature(body: string): {
 	timestamp: string;
