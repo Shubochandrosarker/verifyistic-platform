@@ -20,6 +20,7 @@ import {
 	WebhookService,
 } from "@verifyistic/webhooks";
 import type { Kysely } from "kysely";
+import { BillingService } from "./lib/billing.js";
 import { IdempotencyStore } from "./lib/idempotency.js";
 
 /**
@@ -41,6 +42,8 @@ export interface AppServices {
 	emailOutbox: EmailOutbox;
 	emailSender: EmailSender;
 	idempotencyStore: IdempotencyStore;
+	billing: BillingService;
+	billingSecrets: { paddleWebhookSecret: string; licenseSigningSecret: string };
 }
 
 export interface ServiceOptions {
@@ -51,6 +54,8 @@ export interface ServiceOptions {
 	webhookEncryptionKey?: string;
 	fetcher?: DeliveryFetcher;
 	emailSender?: EmailSender;
+	paddleWebhookSecret?: string;
+	licenseSigningSecret?: string;
 }
 
 export function createServices(
@@ -107,6 +112,19 @@ export function createServices(
 		emailOutbox: new EmailOutbox(db),
 		emailSender,
 		idempotencyStore,
+		billing: new BillingService(db),
+		billingSecrets: {
+			paddleWebhookSecret:
+				options.paddleWebhookSecret ??
+				(typeof process !== "undefined"
+					? (process.env?.PADDLE_WEBHOOK_SECRET ?? "")
+					: ""),
+			licenseSigningSecret:
+				options.licenseSigningSecret ??
+				(typeof process !== "undefined"
+					? (process.env?.LICENSE_SIGNING_SECRET ?? "")
+					: ""),
+		},
 	};
 }
 

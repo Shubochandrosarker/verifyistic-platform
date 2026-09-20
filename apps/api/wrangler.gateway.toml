@@ -1,12 +1,7 @@
-name = "verifyistic-api"
+name = "verifyistic-api-gateway"
 main = "src/worker.ts"
 compatibility_date = "2026-09-01"
 compatibility_flags = ["nodejs_compat"]
-
-# LIVE custom domain (Phase 14) — Worker on api.verifyistic.com
-routes = [
-  { pattern = "api.verifyistic.com", custom_domain = true }
-]
 
 [vars]
 VERIFYISTIC_MODE = "cloud"

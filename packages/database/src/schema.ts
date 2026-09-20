@@ -389,6 +389,8 @@ export interface Database {
 	checkins: CheckinsTable;
 	qr_targets: QrTargetsTable;
 	idempotency_keys: IdempotencyKeysTable;
+	entitlements: EntitlementsTable;
+	licenses: LicensesTable;
 }
 
 export interface IdempotencyKeysTable {
@@ -405,6 +407,36 @@ export interface IdempotencyKeysTable {
 }
 
 export type IdempotencyKey = Selectable<IdempotencyKeysTable>;
+
+export type Entitlement = Selectable<EntitlementsTable>;
+export type License = Selectable<LicensesTable>;
+
+export interface EntitlementsTable {
+	id: string;
+	organization_id: string | null;
+	paddle_customer_id: string;
+	paddle_subscription_id: string | null;
+	plan: string;
+	status: "active" | "canceled" | "past_due" | "trialing";
+	current_period_end: string | null;
+	source: string;
+	created_at: string;
+	updated_at: string;
+}
+
+export interface LicensesTable {
+	id: string;
+	organization_id: string | null;
+	plan: string;
+	license_key_hash: string;
+	license_key_hint: string;
+	status: "active" | "revoked";
+	seats: string | null;
+	issued_to_email: string | null;
+	expires_at: string | null;
+	revoked_at: string | null;
+	created_at: string;
+}
 
 export interface CheckinsTable {
 	id: string;

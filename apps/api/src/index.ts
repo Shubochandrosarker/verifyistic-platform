@@ -14,6 +14,11 @@ import { OPENAPI_SPEC } from "./lib/openapi.js";
 import { createAuthMiddleware } from "./middleware/auth.js";
 import { apiKeysRoutes } from "./routes/api-keys.js";
 import { auditRoutes } from "./routes/audit.js";
+import {
+	billingRoutes,
+	downloadRoutes,
+	paddleWebhookRoutes,
+} from "./routes/billing.js";
 import { checkinRoutes, qrStartRoutes } from "./routes/checkin.js";
 import { customersRoutes } from "./routes/customers.js";
 import {
@@ -21,6 +26,7 @@ import {
 	documentsRoutes,
 	verificationRoutes,
 } from "./routes/documents.js";
+import { importsRoutes } from "./routes/imports.js";
 import { organizationRoutes } from "./routes/organization.js";
 import {
 	signerEntryRoutes,
@@ -183,10 +189,14 @@ export function createApp(
 	v1.route("/webhooks", webhookRoutes(services));
 	v1.route("/api-keys", apiKeysRoutes(services));
 	v1.route("/audit-events", auditRoutes(services));
+	v1.route("/", billingRoutes(services));
+	v1.route("/", paddleWebhookRoutes(services));
+	v1.route("/imports", importsRoutes(services));
 
 	app.route("/", v1);
 	app.route("/", verificationRoutes(services));
 	app.route("/", qrStartRoutes(services));
+	app.route("/v1", downloadRoutes(services));
 
 	return app;
 }
