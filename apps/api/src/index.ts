@@ -169,8 +169,9 @@ export function createApp(
 				"<title>Verifyistic API — v1 Reference</title>" +
 				`<link rel="stylesheet" href="https://unpkg.com/swagger-ui-dist@5.17.14/swagger-ui.css"/>` +
 				"<style>" +
-				":root{--vfy-bg:#0b1622;--vfy-acc:#2fbf71}" +
-				"body{margin:0;background:var(--vfy-bg)}" +
+				":root{--vfy-acc:#2fbf71}" +
+				"body{margin:0;background:#f6f8fa}" +
+				".swagger-ui,.swagger-ui .wrapper{background:#fff}" +
 				".topbar{background:#0e1f31;border-bottom:2px solid var(--vfy-acc);padding:14px 24px;display:flex;align-items:center;gap:14px}" +
 				".topbar .logo{color:#e8f0f7;font:800 20px -apple-system,Segoe UI,sans-serif}.topbar .logo b{color:var(--vfy-acc)}" +
 				".topbar a{color:#8fd6b2;font:600 14px -apple-system,sans-serif;margin-left:auto}" +
