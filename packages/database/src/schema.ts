@@ -389,6 +389,7 @@ export interface Database {
 	checkins: CheckinsTable;
 	qr_targets: QrTargetsTable;
 	idempotency_keys: IdempotencyKeysTable;
+	dashboard_users: DashboardUsersTable;
 	entitlements: EntitlementsTable;
 	licenses: LicensesTable;
 }
@@ -410,6 +411,20 @@ export type IdempotencyKey = Selectable<IdempotencyKeysTable>;
 
 export type Entitlement = Selectable<EntitlementsTable>;
 export type License = Selectable<LicensesTable>;
+
+export interface DashboardUsersTable {
+	id: string;
+	organization_id: string;
+	/** Lowercase email — unique login handle. */
+	email: string;
+	/** PBKDF2-SHA256, 100k iterations, per-user random salt. */
+	password_hash: string;
+	salt: string;
+	role: string;
+	created_at: string;
+}
+
+export type DashboardUser = Selectable<DashboardUsersTable>;
 
 export interface EntitlementsTable {
 	id: string;

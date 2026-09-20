@@ -12,6 +12,7 @@ import { type AppServices, createServices } from "./deps.js";
 import { fail, failInternal, failNotFound, ok } from "./lib/envelope.js";
 import { OPENAPI_SPEC } from "./lib/openapi.js";
 import { createAuthMiddleware } from "./middleware/auth.js";
+import { authRoutes } from "./routes/auth.js";
 import { apiKeysRoutes } from "./routes/api-keys.js";
 import { auditRoutes } from "./routes/audit.js";
 import {
@@ -211,6 +212,7 @@ export function createApp(
 	v1.route("/", billingRoutes(services));
 	v1.route("/", paddleWebhookRoutes(services));
 	v1.route("/imports", importsRoutes(services));
+	v1.route("/", authRoutes(services));
 
 	app.route("/", v1);
 	app.route("/", verificationRoutes(services));
