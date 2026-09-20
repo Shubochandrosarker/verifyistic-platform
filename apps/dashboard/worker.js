@@ -147,7 +147,7 @@ var plans=[["cloud_starter","Starter","$19/mo"],["cloud_range","Range","$49/mo"]
 document.getElementById("body_billing").innerHTML="<p class='muted' style='margin-bottom:14px'>Pick a plan — checkout opens in a popup. Entitlements activate automatically after payment.</p>"+
 plans.map(function(p){var isA=active[p[0]]==="active";
 return "<div class='card' style='margin-bottom:12px;display:flex;justify-content:space-between;align-items:center'><div><b>"+esc(p[1])+"</b> <span class='muted'>"+esc(p[2])+"</span></div>"+
-(isA?pill("active","g"):"<button class='btn' onclick=\"upgrade('"+p[0]+"')\">Checkout</button>")+"</div>";}).join("");});}
+(isA?pill("active","g"):"<button class='btn' onclick=&quot;upgrade('"+p[0]+"')&quot;>Checkout</button>")+"</div>";}).join("");});}
 function vOverview(){return Promise.all([__api("GET","/customers?limit=1"),__api("GET","/templates"),__api("GET","/signing-sessions"),__api("GET","/documents")]).then(function(r){
 var cust=r[0].meta,custHasMore=cust&&cust.has_more;var docs=r[3].data||[];
 document.getElementById("body_overview").innerHTML=
@@ -166,7 +166,7 @@ var h=head('<button class="btn" onclick="newCustomer()">+ New customer</button>'
 '<form id="cf" style="display:none">'+
 '<div><label>First name</label><input id="c_fn"/></div><div><label>Last name</label><input id="c_ln"/></div>'+
 '<div><label>Email</label><input id="c_em" type="email"/></div><div><label>Phone</label><input id="c_ph"/></div>'+
-'<div class="full"><button class="btn" type="button" onclick="saveCustomer()">Save customer</button> <button class="btn ghost" type="button" onclick="document.getElementById(\'cf\').style.display=\'none\'">Cancel</button></div></form>'+
+'<div class="full"><button class="btn" type="button" onclick="saveCustomer()">Save customer</button> <button class="btn ghost" type="button" onclick="document.getElementById(\\'cf\\').style.display=\\'none\\'">Cancel</button></div></form>'+
 tbl("ct",["Name","Email","Phone","Status","Created"]);
 document.getElementById("body_customers").innerHTML=h;rows("ct",(j.data||[]).map(function(c){return "<tr><td>"+esc(c.first_name+" "+c.last_name)+"</td><td>"+esc(c.email||"—")+"</td><td>"+esc(c.phone||"—")+"</td><td>"+stPill(c.status)+"</td><td>"+tm(c.created_at)+"</td></tr>";}));});}
 window.newCustomer=function(){document.getElementById("cf").style.display="grid";};
@@ -182,10 +182,10 @@ var tpls=(r[1].data||[]).filter(function(t){return t.status==="published";});
 var custs=r[2].data||[];
 var opts=tpls.map(function(t){return "<option value='"+esc(t.id)+"'>"+esc(t.name)+"</option>";}).join("");
 var copts=custs.map(function(c){return "<option value='"+esc(c.id)+"'>"+esc(c.first_name+" "+c.last_name)+"</option>";}).join("");
-document.getElementById("body_sessions").innerHTML=head('<button class="btn" onclick="document.getElementById(\'sf\').style.display=\'grid\'">+ New signing request</button>')+
+document.getElementById("body_sessions").innerHTML=head('<button class="btn" onclick="document.getElementById(\\'sf\\').style.display=\\'grid\\'">+ New signing request</button>')+
 '<form id="sf" style="display:none"><div><label>Template (published)</label><select id="s_tpl">'+opts+'</select></div>'+
 '<div><label>Customer</label><select id="s_cust">'+copts+'</select></div>'+
-'<div class="full"><button class="btn" type="button" onclick="createSession()">Create request</button> <button class="btn ghost" type="button" onclick="document.getElementById(\'sf\').style.display=\'none\'">Cancel</button></div></form>'+
+'<div class="full"><button class="btn" type="button" onclick="createSession()">Create request</button> <button class="btn ghost" type="button" onclick="document.getElementById(\\'sf\\').style.display=\\'none\\'">Cancel</button></div></form>'+
 tbl("ss",["Status","Customer","Expires","Created"]);
 window.__custs=custs;
 rows("ss",(r[0].data||[]).map(function(s){var c=window.__custs.find(function(x){return x.id===s.customer_id;});
@@ -194,28 +194,28 @@ window.createSession=function(){__api("POST","/signing-sessions",{template_id:v(
 
 function vDocuments(){return __api("GET","/documents").then(function(j){
 document.getElementById("body_documents").innerHTML=head("")+tbl("dc",["Number","Status","Signed","Actions"]);
-rows("dc",(j.data||[]).map(function(d){return "<tr><td class='mono'>"+esc(d.document_number)+"</td><td>"+stPill(d.status)+"</td><td>"+tm(d.signed_at)+"</td><td><button class='btn ghost' style='padding:4px 10px;font-size:13px' onclick=\"dlDoc('"+esc(d.id)+"')\">Download</button></td></tr>";}));});}
+rows("dc",(j.data||[]).map(function(d){return "<tr><td class='mono'>"+esc(d.document_number)+"</td><td>"+stPill(d.status)+"</td><td>"+tm(d.signed_at)+"</td><td><button class='btn ghost' style='padding:4px 10px;font-size:13px' onclick=&quot;dlDoc('"+esc(d.id)+"')&quot;>Download</button></td></tr>";}));});}
 window.dlDoc=function(id){__api("POST","/documents/"+id+"/download-token").then(function(j){location.href=j.data.download_url;}).catch(function(e){toast(e.message,true);});};
 
 function vKeys(){return __api("GET","/api-keys").then(function(j){
-document.getElementById("body_keys").innerHTML=head('<button class="btn" onclick="document.getElementById(\'kf\').style.display=\'grid\'">+ New API key</button>')+
+document.getElementById("body_keys").innerHTML=head('<button class="btn" onclick="document.getElementById(\\'kf\\').style.display=\\'grid\\'">+ New API key</button>')+
 '<form id="kf" style="display:none"><div><label>Name</label><input id="k_nm" placeholder="integration-name"/></div>'+
 '<div><label>Mode</label><select id="k_md"><option value="live">live</option><option value="test">test</option></select></div>'+
 '<div class="full"><label>Scopes (comma-separated)</label><input id="k_sc" value="customers:read,signing:write,documents:read"/>'+
-'<button class="btn" style="margin-top:10px" type="button" onclick="createKey()">Create key</button> <button class="btn ghost" type="button" onclick="document.getElementById(\'kf\').style.display=\'none\'">Cancel</button></div></form>'+
+'<button class="btn" style="margin-top:10px" type="button" onclick="createKey()">Create key</button> <button class="btn ghost" type="button" onclick="document.getElementById(\\'kf\\').style.display=\\'none\\'">Cancel</button></div></form>'+
 '<div id="newkey" class="card" style="display:none;margin-bottom:14px"><b style="color:var(--acc)">Copy your key now — it is shown only once:</b><p class="mono" id="nk" style="margin:8px 0;word-break:break-all"></p></div>'+
 tbl("ak",["Name","Prefix","Mode","Scopes","Last used","Actions"]);
-rows("ak",(j.data||[]).map(function(k){return "<tr><td>"+esc(k.name)+"</td><td class='mono'>"+esc(k.key_prefix)+"…</td><td>"+(k.key_prefix.indexOf("_test_")>=0?pill("test","b"):pill("live","g"))+"</td><td class='muted'>"+esc((k.scopes||[]).join(", "))+"</td><td>"+tm(k.last_used_at)+"</td><td><button class='btn danger' style='padding:4px 10px;font-size:13px' onclick=\"revokeKey('"+esc(k.id)+"')\">Revoke</button></td></tr>";}));});}
+rows("ak",(j.data||[]).map(function(k){return "<tr><td>"+esc(k.name)+"</td><td class='mono'>"+esc(k.key_prefix)+"…</td><td>"+(k.key_prefix.indexOf("_test_")>=0?pill("test","b"):pill("live","g"))+"</td><td class='muted'>"+esc((k.scopes||[]).join(", "))+"</td><td>"+tm(k.last_used_at)+"</td><td><button class='btn danger' style='padding:4px 10px;font-size:13px' onclick=&quot;revokeKey('"+esc(k.id)+"')&quot;>Revoke</button></td></tr>";}));});}
 window.createKey=function(){var scopes=v("k_sc").split(",").map(function(s){return s.trim();}).filter(Boolean);
 __api("POST","/api-keys",{name:v("k_nm"),mode:v("k_md"),scopes:scopes}).then(function(j){document.getElementById("kf").style.display="none";
 document.getElementById("newkey").style.display="block";document.getElementById("nk").textContent=j.data.key;toast("API key created");go("keys");}).catch(function(e){toast(e.message,true);});};
 window.revokeKey=function(id){if(!confirm("Revoke this API key? Clients using it stop working immediately."))return;__api("DELETE","/api-keys/"+id).then(function(){toast("Key revoked");go("keys");}).catch(function(e){toast(e.message,true);});};
 
 function vWebhooks(){return __api("GET","/webhooks").then(function(j){
-document.getElementById("body_webhooks").innerHTML=head('<button class="btn" onclick="document.getElementById(\'wf\').style.display=\'grid\'">+ Register endpoint</button>')+
+document.getElementById("body_webhooks").innerHTML=head('<button class="btn" onclick="document.getElementById(\\'wf\\').style.display=\\'grid\\'">+ Register endpoint</button>')+
 '<form id="wf" style="display:none"><div class="full"><label>Endpoint URL (https)</label><input id="w_url" placeholder="https://example.com/verifyistic"/></div>'+
 '<div class="full"><label>Events (comma-separated, * for all)</label><input id="w_ev" value="*"/>'+
-'<button class="btn" style="margin-top:10px" type="button" onclick="registerHook()">Register</button> <button class="btn ghost" type="button" onclick="document.getElementById(\'wf\').style.display=\'none\'">Cancel</button></div></form>'+
+'<button class="btn" style="margin-top:10px" type="button" onclick="registerHook()">Register</button> <button class="btn ghost" type="button" onclick="document.getElementById(\\'wf\\').style.display=\\'none\\'">Cancel</button></div></form>'+
 '<div id="whsec" class="card" style="display:none;margin-bottom:14px"><b style="color:var(--acc)">Signing secret — shown only once:</b><p class="mono" id="whs" style="margin:8px 0;word-break:break-all"></p></div>'+
 tbl("wk",["URL","Events","Status"]);
 rows("wk",(j.data||[]).map(function(w){return "<tr><td class='mono'>"+esc(w.url)+"</td><td class='muted'>"+esc((w.subscribed_events||[]).join(", "))+"</td><td>"+stPill(w.status)+"</td></tr>";}));});}
