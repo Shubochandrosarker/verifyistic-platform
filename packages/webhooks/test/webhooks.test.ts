@@ -3,13 +3,38 @@ import { createInMemoryDatabase } from "@verifyistic/database/testing";
 import type { TenantContext } from "@verifyistic/tenancy";
 import { describe, expect, it } from "vitest";
 import {
+	PostmarkEmailSender,
 	ResendEmailSender,
+	SmtpEmailSender,
 	WebhookService,
 	decryptSecret,
 	encryptSecret,
 	isWebhookUrlAllowed,
 	signPayload,
 } from "../src/index.js";
+
+class FakeSmtpConnection {
+	readonly writes: string[] = [];
+	private responseIndex = 0;
+
+	constructor(private readonly responses: string[]) {}
+
+	async readLine(): Promise<string> {
+		const response = this.responses[this.responseIndex++];
+		if (!response) throw new Error("fake SMTP response queue exhausted");
+		return response;
+	}
+
+	async write(data: string): Promise<void> {
+		this.writes.push(data);
+	}
+
+	async startTls(): Promise<FakeSmtpConnection> {
+		return this;
+	}
+
+	async close(): Promise<void> {}
+}
 
 const orgA: TenantContext = {
 	organizationId: "org_a",
@@ -101,6 +126,161 @@ describe("ResendEmailSender", () => {
 		expect(body.subject).toContain("Range <A>");
 		expect(body.html).toContain("Range &lt;A&gt;");
 		expect(body.html).toContain("a=1&amp;b=2");
+	});
+});
+
+describe("PostmarkEmailSender", () => {
+	it("sends an escaped signing invitation through the transactional stream", async () => {
+		let captured: { url: string; init: RequestInit } | undefined;
+		const sender = new PostmarkEmailSender(
+			"pm_test_token",
+			"Verifyistic <noreply@example.com>",
+			"outbound",
+			async (url, init) => {
+				captured = { url: String(url), init: init ?? {} };
+				return new Response(JSON.stringify({ MessageID: "email_1" }), {
+					status: 200,
+				});
+			},
+		);
+
+		await sender.send({
+			to: "signer@example.com",
+			template: "signing_session_invitation",
+			payload: {
+				business: "Range <A>",
+				signer_url: "https://api.example.com/s/token?a=1&b=2",
+			},
+		});
+
+		expect(captured?.url).toBe("https://api.postmarkapp.com/email");
+		expect(captured?.init.headers).toMatchObject({
+			"X-Postmark-Server-Token": "pm_test_token",
+			"Content-Type": "application/json",
+		});
+		const body = JSON.parse(String(captured?.init.body)) as {
+			From: string;
+			To: string;
+			Subject: string;
+			TextBody: string;
+			HtmlBody: string;
+			MessageStream: string;
+		};
+		expect(body.From).toBe("Verifyistic <noreply@example.com>");
+		expect(body.To).toBe("signer@example.com");
+		expect(body.Subject).toContain("Range <A>");
+		expect(body.HtmlBody).toContain("Range &lt;A&gt;");
+		expect(body.HtmlBody).toContain("a=1&amp;b=2");
+		expect(body.MessageStream).toBe("outbound");
+	});
+
+	it("fails closed when the server token is missing", async () => {
+		const sender = new PostmarkEmailSender("", "noreply@example.com");
+		await expect(
+			sender.send({
+				to: "signer@example.com",
+				template: "notification",
+				payload: {},
+			}),
+		).rejects.toThrow("POSTMARK_SERVER_TOKEN is not configured.");
+	});
+});
+
+describe("SmtpEmailSender", () => {
+	it("authenticates and sends a MIME message over implicit TLS", async () => {
+		const connection = new FakeSmtpConnection([
+			"220 mail.wpistic.com ESMTP",
+			"250-mail.wpistic.com",
+			"250-AUTH PLAIN LOGIN",
+			"250 SIZE 10485760",
+			"235 2.7.0 Authentication successful",
+			"250 2.1.0 OK",
+			"250 2.1.5 OK",
+			"354 End data with <CR><LF>.<CR><LF>",
+			"250 2.0.0 queued",
+			"221 2.0.0 Bye",
+		]);
+		let connectionOptions:
+			| {
+					host: string;
+					port: number;
+					mode: "tls" | "starttls";
+			  }
+			| undefined;
+		const sender = new SmtpEmailSender({
+			connector: {
+				async connect(options) {
+					connectionOptions = options;
+					return connection;
+				},
+			},
+			host: "mail.wpistic.com",
+			port: 465,
+			mode: "tls",
+			username: "noreply@wpistic.com",
+			password: "test-password",
+			from: "Verifyistic <noreply@wpistic.com>",
+			heloName: "verifyistic.com",
+		});
+
+		await sender.send({
+			to: "signer@example.com",
+			template: "signing_session_invitation",
+			payload: {
+				business: "Range <A>",
+				signer_url: "https://api.example.com/s/token?a=1&b=2",
+			},
+		});
+
+		expect(connectionOptions).toEqual({
+			host: "mail.wpistic.com",
+			port: 465,
+			mode: "tls",
+		});
+		expect(connection.writes[0]).toBe("EHLO verifyistic.com\r\n");
+		expect(connection.writes[1]).toMatch(/^AUTH PLAIN /);
+		expect(connection.writes).toContain("MAIL FROM:<noreply@wpistic.com>\r\n");
+		expect(connection.writes).toContain("RCPT TO:<signer@example.com>\r\n");
+		const body = connection.writes.find((write) =>
+			write.includes("MIME-Version"),
+		);
+		expect(body).toBeDefined();
+		expect(body).toContain("Range &lt;A&gt;");
+		expect(body).toContain("a=1&amp;b=2");
+		expect(body).toMatch(/\r\n\.\r\n$/);
+		expect(connection.writes.at(-1)).toBe("QUIT\r\n");
+	});
+
+	it("uses STARTTLS when configured and rejects missing SMTP credentials", async () => {
+		const connection = new FakeSmtpConnection([
+			"220 mail.wpistic.com ESMTP",
+			"250-mail.wpistic.com",
+			"250 STARTTLS",
+			"220 2.0.0 Ready to start TLS",
+			"250 mail.wpistic.com",
+		]);
+		const sender = new SmtpEmailSender({
+			connector: { connect: async () => connection },
+			host: "mail.wpistic.com",
+			port: 587,
+			mode: "starttls",
+			username: "",
+			password: "",
+			from: "noreply@wpistic.com",
+		});
+
+		await expect(
+			sender.send({
+				to: "signer@example.com",
+				template: "notification",
+				payload: {},
+			}),
+		).rejects.toThrow("SMTP_USER and SMTP_PASSWORD are required.");
+		expect(connection.writes).toEqual([
+			"EHLO verifyistic-worker\r\n",
+			"STARTTLS\r\n",
+			"EHLO verifyistic-worker\r\n",
+		]);
 	});
 });
 
