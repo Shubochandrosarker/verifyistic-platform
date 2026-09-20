@@ -1,7 +1,8 @@
 /**
  * Email outbox + sender adapter (Phase 6). Emails are queued in the DB (same retry
  * discipline as webhooks) and pumped by the worker. The sender is injected —
- * ConsoleEmailSender for dev/tests and ResendEmailSender for the cloud runtime.
+ * ConsoleEmailSender for dev/tests and ResendEmailSender/SmtpEmailSender for
+ * cloud delivery.
  */
 import { newId } from "@verifyistic/core";
 import type { Database, EmailOutboxMessage } from "@verifyistic/database";
@@ -111,6 +112,32 @@ export interface EmailSender {
 	}): Promise<void>;
 }
 
+export interface SmtpConnection {
+	readLine(): Promise<string>;
+	write(data: string): Promise<void>;
+	startTls(): Promise<SmtpConnection>;
+	close(): Promise<void>;
+}
+
+export interface SmtpConnector {
+	connect(options: {
+		host: string;
+		port: number;
+		mode: "tls" | "starttls";
+	}): Promise<SmtpConnection>;
+}
+
+export interface SmtpEmailSenderOptions {
+	connector: SmtpConnector;
+	host: string;
+	port: number;
+	mode: "tls" | "starttls";
+	username: string;
+	password: string;
+	from: string;
+	heloName?: string;
+}
+
 /** Dev/test sender — logs instead of sending. Never used in production. */
 export class ConsoleEmailSender implements EmailSender {
 	async send(email: {
@@ -141,21 +168,7 @@ export class ResendEmailSender implements EmailSender {
 		payload: Record<string, unknown>;
 	}): Promise<void> {
 		if (!this.apiKey) throw new Error("RESEND_API_KEY is not configured.");
-		const signerUrl =
-			typeof email.payload.signer_url === "string"
-				? email.payload.signer_url
-				: "";
-		const business =
-			typeof email.payload.business === "string"
-				? email.payload.business
-				: "Verifyistic customer";
-		const subject =
-			email.template === "signing_session_invitation"
-				? `${business} sent you a document to sign`
-				: "Verifyistic notification";
-		const html = signerUrl
-			? `<p>${escapeHtml(business)} sent you a document to review and sign.</p><p><a href="${escapeHtml(signerUrl)}">Open the secure signing link</a></p><p>This link is private and expires automatically.</p>`
-			: `<p>${escapeHtml(business)} sent you a Verifyistic notification.</p>`;
+		const rendered = renderTransactionalEmail(email);
 
 		const response = await this.fetcher("https://api.resend.com/emails", {
 			method: "POST",
@@ -166,8 +179,8 @@ export class ResendEmailSender implements EmailSender {
 			body: JSON.stringify({
 				from: this.from,
 				to: [email.to],
-				subject,
-				html,
+				subject: rendered.subject,
+				html: rendered.html,
 			}),
 		});
 		if (!response.ok) {
@@ -175,6 +188,315 @@ export class ResendEmailSender implements EmailSender {
 			throw new Error(`Resend rejected email (${response.status}): ${detail}`);
 		}
 	}
+}
+
+/**
+ * SMTP delivery adapter. The connection is injected so the protocol can be
+ * tested without opening a network socket; the Worker supplies its TCP/TLS
+ * connector at runtime.
+ */
+export class SmtpEmailSender implements EmailSender {
+	private readonly options: SmtpEmailSenderOptions;
+
+	constructor(options: SmtpEmailSenderOptions) {
+		this.options = options;
+	}
+
+	async send(email: {
+		to: string;
+		template: string;
+		payload: Record<string, unknown>;
+	}): Promise<void> {
+		const from = parseMailbox(this.options.from, "SMTP_FROM");
+		const to = parseMailbox(email.to, "recipient");
+		const connection = await this.options.connector.connect({
+			host: this.options.host,
+			port: this.options.port,
+			mode: this.options.mode,
+		});
+		let active = connection;
+		try {
+			assertResponse(await readResponse(active), [220], "SMTP greeting");
+			let capabilities = await sendCommand(
+				active,
+				`EHLO ${safeHeloName(this.options.heloName ?? "verifyistic-worker")}`,
+				[250],
+				"EHLO",
+			);
+
+			if (this.options.mode === "starttls") {
+				if (!hasCapability(capabilities, "STARTTLS")) {
+					throw new Error("SMTP server does not advertise STARTTLS.");
+				}
+				assertResponse(
+					await sendCommand(active, "STARTTLS", [220], "STARTTLS"),
+					[220],
+					"STARTTLS",
+				);
+				active = await active.startTls();
+				capabilities = await sendCommand(
+					active,
+					`EHLO ${safeHeloName(this.options.heloName ?? "verifyistic-worker")}`,
+					[250],
+					"EHLO after STARTTLS",
+				);
+			}
+
+			await authenticate(
+				active,
+				capabilities,
+				this.options.username,
+				this.options.password,
+			);
+			await sendCommand(
+				active,
+				`MAIL FROM:<${from.address}>`,
+				[250],
+				"MAIL FROM",
+			);
+			await sendCommand(
+				active,
+				`RCPT TO:<${to.address}>`,
+				[250, 251],
+				"RCPT TO",
+			);
+			await sendCommand(active, "DATA", [354], "DATA");
+			const rendered = renderTransactionalEmail(email);
+			await active.write(
+				stuffSmtpMessage(
+					buildMimeMessage({
+						from: from.header,
+						to: to.header,
+						subject: rendered.subject,
+						text: rendered.text,
+						html: rendered.html,
+					}),
+				),
+			);
+			await sendCommand(active, "", [250], "message body");
+			await sendCommand(active, "QUIT", [221, 250], "QUIT");
+		} finally {
+			await active.close().catch(() => undefined);
+		}
+	}
+}
+
+interface RenderedTransactionalEmail {
+	subject: string;
+	text: string;
+	html: string;
+}
+
+export function renderTransactionalEmail(email: {
+	template: string;
+	payload: Record<string, unknown>;
+}): RenderedTransactionalEmail {
+	const signerUrl =
+		typeof email.payload.signer_url === "string"
+			? email.payload.signer_url
+			: "";
+	const business =
+		typeof email.payload.business === "string"
+			? email.payload.business
+			: "Verifyistic customer";
+	const subject =
+		email.template === "signing_session_invitation"
+			? `${business} sent you a document to sign`
+			: "Verifyistic notification";
+	const text = signerUrl
+		? `${business} sent you a document to review and sign.\n\nOpen the secure signing link: ${signerUrl}\n\nThis link is private and expires automatically.`
+		: `${business} sent you a Verifyistic notification.`;
+	const html = signerUrl
+		? `<p>${escapeHtml(business)} sent you a document to review and sign.</p><p><a href="${escapeHtml(signerUrl)}">Open the secure signing link</a></p><p>This link is private and expires automatically.</p>`
+		: `<p>${escapeHtml(business)} sent you a Verifyistic notification.</p>`;
+	return { subject, text, html };
+}
+
+interface Mailbox {
+	header: string;
+	address: string;
+}
+
+function parseMailbox(value: string, label: string): Mailbox {
+	if (!value || /[\r\n]/.test(value)) {
+		throw new Error(`${label} is invalid.`);
+	}
+	const trimmed = value.trim();
+	const match = trimmed.match(/<([^<>\s]+)>$/);
+	const address = (match?.[1] ?? trimmed).trim();
+	if (!/^[^\s@<>]+@[^\s@<>]+\.[^\s@<>]+$/.test(address)) {
+		throw new Error(`${label} must contain a valid email address.`);
+	}
+	return { header: trimmed, address };
+}
+
+function safeHeloName(value: string): string {
+	if (!value || /[\r\n\s]/.test(value)) {
+		throw new Error("SMTP_HELO must be a single hostname.");
+	}
+	return value;
+}
+
+interface SmtpResponse {
+	code: number;
+	lines: string[];
+}
+
+async function readResponse(connection: SmtpConnection): Promise<SmtpResponse> {
+	const first = await connection.readLine();
+	const match = first.match(/^(\d{3})([- ])(.*)$/);
+	if (!match)
+		throw new Error(`Malformed SMTP response: ${first.slice(0, 120)}`);
+	const code = Number(match[1]);
+	const lines = [first];
+	if (match[2] === "-") {
+		while (true) {
+			const line = await connection.readLine();
+			lines.push(line);
+			if (line.startsWith(`${code} `)) break;
+			if (!line.startsWith(`${code}-`)) {
+				throw new Error(
+					`Malformed multiline SMTP response: ${line.slice(0, 120)}`,
+				);
+			}
+		}
+	}
+	return { code, lines };
+}
+
+async function sendCommand(
+	connection: SmtpConnection,
+	command: string,
+	expectedCodes: number[],
+	label: string,
+): Promise<SmtpResponse> {
+	if (command) await connection.write(`${command}\r\n`);
+	const response = await readResponse(connection);
+	assertResponse(response, expectedCodes, label);
+	return response;
+}
+
+function assertResponse(
+	response: SmtpResponse,
+	expectedCodes: number[],
+	label: string,
+): void {
+	if (!expectedCodes.includes(response.code)) {
+		const detail = response.lines.at(-1)?.slice(0, 240) ?? "unknown response";
+		throw new Error(`${label} failed (${response.code}): ${detail}`);
+	}
+}
+
+function hasCapability(response: SmtpResponse, capability: string): boolean {
+	return response.lines.some((line) =>
+		new RegExp(`^250[- ]${capability}(?:[ =]|$)`, "i").test(line),
+	);
+}
+
+async function authenticate(
+	connection: SmtpConnection,
+	capabilities: SmtpResponse,
+	username: string,
+	password: string,
+): Promise<void> {
+	if (!username || !password) {
+		throw new Error("SMTP_USER and SMTP_PASSWORD are required.");
+	}
+	if (hasCapability(capabilities, "AUTH PLAIN")) {
+		await sendCommand(
+			connection,
+			`AUTH PLAIN ${base64Encode(`\u0000${username}\u0000${password}`)}`,
+			[235],
+			"AUTH PLAIN",
+		);
+		return;
+	}
+	if (hasCapability(capabilities, "AUTH LOGIN")) {
+		await sendCommand(connection, "AUTH LOGIN", [334], "AUTH LOGIN");
+		await sendCommand(
+			connection,
+			base64Encode(username),
+			[334],
+			"SMTP username",
+		);
+		await sendCommand(
+			connection,
+			base64Encode(password),
+			[235],
+			"SMTP password",
+		);
+		return;
+	}
+	throw new Error("SMTP server does not advertise AUTH PLAIN or AUTH LOGIN.");
+}
+
+function buildMimeMessage(input: {
+	from: string;
+	to: string;
+	subject: string;
+	text: string;
+	html: string;
+}): string {
+	const boundary = `verifyistic-${Date.now().toString(36)}-alternative`;
+	return [
+		`From: ${headerSafe(input.from)}`,
+		`To: ${headerSafe(input.to)}`,
+		`Subject: ${encodeMimeHeader(input.subject)}`,
+		`Date: ${new Date().toUTCString()}`,
+		"MIME-Version: 1.0",
+		`Content-Type: multipart/alternative; boundary="${boundary}"`,
+		"",
+		`--${boundary}`,
+		"Content-Type: text/plain; charset=UTF-8",
+		"Content-Transfer-Encoding: 8bit",
+		"",
+		normalizeCrlf(input.text),
+		`--${boundary}`,
+		"Content-Type: text/html; charset=UTF-8",
+		"Content-Transfer-Encoding: 8bit",
+		"",
+		normalizeCrlf(input.html),
+		`--${boundary}--`,
+		"",
+	].join("\r\n");
+}
+
+function stuffSmtpMessage(message: string): string {
+	const normalized = normalizeCrlf(message).replace(/(^|\r\n)\./g, "$1..");
+	return `${normalized.replace(/\r\n$/, "")}\r\n.\r\n`;
+}
+
+function normalizeCrlf(value: string): string {
+	return value.replace(/\r?\n/g, "\r\n");
+}
+
+function headerSafe(value: string): string {
+	if (/[\r\n]/.test(value)) throw new Error("SMTP header contains a newline.");
+	return value;
+}
+
+function encodeMimeHeader(value: string): string {
+	return /^[\x20-\x7e]*$/.test(value)
+		? value
+		: `=?UTF-8?B?${base64Encode(value)}?=`;
+}
+
+function base64Encode(value: string): string {
+	const bytes = new TextEncoder().encode(value);
+	const alphabet =
+		"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+	let output = "";
+	for (let index = 0; index < bytes.length; index += 3) {
+		const a = bytes[index] ?? 0;
+		const b = bytes[index + 1] ?? 0;
+		const c = bytes[index + 2] ?? 0;
+		const n = (a << 16) | (b << 8) | c;
+		output += alphabet[(n >>> 18) & 63];
+		output += alphabet[(n >>> 12) & 63];
+		output += index + 1 < bytes.length ? alphabet[(n >>> 6) & 63] : "=";
+		output += index + 2 < bytes.length ? alphabet[n & 63] : "=";
+	}
+	return output;
 }
 
 function escapeHtml(value: string): string {
