@@ -150,7 +150,7 @@ var plans=[["cloud_starter","Starter","$19/mo"],["cloud_range","Range","$49/mo"]
 document.getElementById("body_billing").innerHTML="<p class='muted' style='margin-bottom:14px'>Pick a plan — checkout opens in a popup. Entitlements activate automatically after payment.</p>"+
 plans.map(function(p){var isA=active[p[0]]==="active";
 return "<div class='card' style='margin-bottom:12px;display:flex;justify-content:space-between;align-items:center'><div><b>"+esc(p[1])+"</b> <span class='muted'>"+esc(p[2])+"</span></div>"+
-(isA?pill("active","g"):"<button class='btn' onclick=\"upgrade('"+p[0]+"')\">Checkout</button>")+"</div>";}).join("");});}
+(isA?pill("active","g"):"<button class='btn' onclick=\\\"upgrade('"+p[0]+"')\\\">Checkout</button>")+"</div>";}).join("");});}
 function vOverview(){return Promise.all([__api("GET","/customers?limit=1"),__api("GET","/templates"),__api("GET","/signing-sessions"),__api("GET","/documents")]).then(function(r){
 var cust=r[0].meta,custHasMore=cust&&cust.has_more;var docs=r[3].data||[];
 document.getElementById("body_overview").innerHTML=
