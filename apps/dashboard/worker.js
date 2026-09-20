@@ -57,9 +57,18 @@ label{font-size:12.5px;color:var(--mut);display:block;margin-bottom:4px}
 <div class="logo">Verify<b>istic</b></div>
 <h1>Sign in to your dashboard</h1>
 <p class="muted" style="margin:8px 0 16px">Paste a Verifyistic API key (<span class="mono">vfy_live_…</span>). It stays in this browser and is sent only to the Verifyistic API.</p>
-<label for="key">API key</label>
-<input id="key" type="password" placeholder="vfy_live_…" autocomplete="off"/>
-<button class="btn" style="width:100%;margin-top:14px" onclick="signin()">Sign in</button>
+<label for="key">Company / range name</label>
+<input id="su_co" placeholder="Acme Range"/>
+<div style="margin-top:10px"><label for="su_em">Email</label><input id="su_em" type="email" placeholder="you@range.com"/></div>
+<div style="margin-top:10px"><label for="su_pw">Password (10+ chars)</label><input id="su_pw" type="password"/></div>
+<button class="btn" style="width:100%;margin-top:14px" onclick="signup()">Create account</button>
+<p class="muted" style="text-align:center;margin:10px 0">Already have an account? <a href="#" id="toggle-login" style="color:var(--acc2)">Sign in</a></p>
+<div id="login-fields" style="display:none">
+<div style="margin-top:8px"><label for="li_em">Email</label><input id="li_em" type="email"/></div>
+<div style="margin-top:10px"><label for="li_pw">Password</label><input id="li_pw" type="password"/></div>
+<button class="btn" style="width:100%;margin-top:14px" onclick="login()">Sign in</button>
+<p class="muted" style="text-align:center;margin:10px 0"><a href="#" id="toggle-signup" style="color:var(--acc2)">Create an account</a> · <a href="#" id="toggle-key" style="color:var(--acc2)">Use an API key</a></p>
+</div>
 <p id="lerr" class="muted" style="margin-top:12px;color:var(--err);display:none"></p>
 </div>
 
@@ -74,14 +83,31 @@ label{font-size:12.5px;color:var(--mut);display:block;margin-bottom:4px}
 
 <script>
 (function(){"use strict";
-var KEY=localStorage.getItem("vfy_key")||"",ORG=null,NAV=[
-["overview","Overview"],["customers","Customers"],["templates","Templates"],
+var KEY=localStorage.getItem("vfy_key")||"",ORG=null;
+var PRICES={cloud_starter:"pri_01m2xsd262rezepyztce1xp8dc",cloud_range:"pri_01m2xsd29s4xha041jffh2ytgz",cloud_range_pro:"pri_01m2xsd2dtd7d9v90537425ent",cloud_business:"pri_01m2xsd2gn7q813afq1e283wz8",self_hosted_range:"pri_01m2xsd2n0rz24dnbt7192n769",self_hosted_pro:"pri_01m2xsd2r6n08rmk0ka9r6kyam",self_hosted_multi:"pri_01m2xsd2v57qhde8575ez4jw87",updates_support:"pri_01m2xsd2yr5040y9cqz14ybszp"};
+var PLAN=new URLSearchParams(location.hash.slice(1)).get("plan")||null;
+var PADDLE_CLIENT_TOKEN=window.PADDLE_CLIENT_TOKEN||"";
+var NAV=[
+["overview","Overview"],["billing","Billing & Plans"],["customers","Customers"],["templates","Templates"],
 ["sessions","Signing Requests"],["documents","Documents"],["keys","API Keys"],["webhooks","Webhooks"]];
 window.__api=function(m,p,b){return fetch(API+p,{method:m,headers:{"Authorization":"Bearer "+KEY,"Content-Type":"application/json"},body:b?JSON.stringify(b):undefined}).then(function(r){return r.json().then(function(j){if(!r.ok||j.error){var e=new Error((j.error&&j.error.message)||("HTTP "+r.status));e.code=j.error&&j.error.code;e.status=r.status;throw e;}return j;});});};
 function toast(m,err){var t=document.getElementById("toast");t.textContent=m;t.className=err?"err":"";t.style.display="block";setTimeout(function(){t.style.display="none";},4200);}
 window.signout=function(){localStorage.removeItem("vfy_key");KEY="";location.reload();};
-window.signin=function(){KEY=document.getElementById("key").value.trim();if(KEY.length<20){return showErr("That key looks too short.");}
-__api("GET","/organization").then(function(j){localStorage.setItem("vfy_key",KEY);ORG=j.data;boot();}).catch(function(e){showErr(e.message);});};
+function v2(id){var el=document.getElementById(id);return el?el.value.trim():"";}
+function saveKey(k){KEY=k;localStorage.setItem("vfy_key",k);__api("GET","/organization").then(function(j){ORG=j.data;boot();}).catch(function(e){showErr(e.message);});}
+window.signup=function(){var co=v2("su_co"),em=v2("su_em"),pw=v2("su_pw");
+if(!co||!em||pw.length<10){return showErr("Fill company, email and a 10+ character password.");}
+fetch(API+"/auth/signup",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({company_name:co,email:em,password:pw})})
+.then(function(r){return r.json().then(function(j){return{ok:r.ok,j:j};});}).then(function(res){
+if(!res.ok){return showErr((res.j.error&&res.j.error.message)||"Signup failed");}
+if(PLAN){sessionStorage.setItem("vfy_pending_plan",PLAN);}
+saveKey(res.j.data.api_key);}).catch(function(){showErr("Network error.");});};
+window.login=function(){__api("POST","/auth/login",{email:v2("li_em"),password:v2("li_pw")}).then(function(j){saveKey(j.data.api_key);}).catch(function(e){showErr(e.message);});};
+document.addEventListener("click",function(ev){var t=ev.target.id||"";
+if(t==="toggle-login"){ev.preventDefault();document.getElementById("su_co").style.display="none";document.querySelectorAll("#su_em,#su_pw").forEach(function(e){e.parentElement.style.display="block";});
+document.getElementById("login-fields").style.display="block";document.getElementById("su_co").parentElement.style.display="none";document.querySelector('button[onclick="signup()"]').style.display="none";}
+if(t==="toggle-signup"){ev.preventDefault();location.reload();}
+if(t==="toggle-key"){ev.preventDefault();location.hash="";location.reload();}});
 function showErr(m){var el=document.getElementById("lerr");el.textContent=m;el.style.display="block";}
 function esc(s){return String(s==null?"":s).replace(/[&<>"']/g,function(c){return{"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c];});}
 function pill(v,cls){return '<span class="pill '+cls+'">'+esc(v)+"</span>";}
@@ -93,18 +119,35 @@ document.getElementById("app").style.display="block";
 document.getElementById("who").textContent=ORG.name+" · "+ORG.slug;
 var nav=document.getElementById("nav");nav.innerHTML="";
 NAV.forEach(function(n){var b=document.createElement("button");b.textContent=n[1];b.id="nav_"+n[0];b.onclick=function(){go(n[0]);};nav.appendChild(b);});
-go("overview");
+if(PLAN){sessionStorage.setItem("vfy_pending_plan",PLAN);}
+go(sessionStorage.getItem("vfy_pending_plan")?"billing":"overview");
 }
 window.go=function(sec){document.querySelectorAll(".sec").forEach(function(s){s.classList.remove("on");});document.querySelectorAll("#nav button").forEach(function(b){b.classList.remove("on");});
 var nb=document.getElementById("nav_"+sec);if(nb)nb.classList.add("on");
 var m=document.getElementById("main");m.innerHTML='<h1>'+NAV.find(function(n){return n[0]===sec;})[1]+'</h1><div id="body_'+sec+'" class="sec on"><p class="muted">Loading…</p></div>';
-var R={overview:vOverview,customers:vCustomers,templates:vTemplates,sessions:vSessions,documents:vDocuments,keys:vKeys,webhooks:vWebhooks}[sec];
-R().catch(function(e){document.getElementById("body_"+sec).innerHTML='<p style="color:var(--err)">'+esc(e.message)+"</p>";});};
+var R={overview:vOverview,billing:vBilling,customers:vCustomers,templates:vTemplates,sessions:vSessions,documents:vDocuments,keys:vKeys,webhooks:vWebhooks}[sec]||vOverview;
+var pending=sessionStorage.getItem("vfy_pending_plan");R().then(function(){if(pending&&sec==="billing"){sessionStorage.removeItem("vfy_pending_plan");setTimeout(function(){window.upgrade(pending);},400);}}).catch(function(e){document.getElementById("body_"+sec).innerHTML='<p style="color:var(--err)">'+esc(e.message)+"</p>";});};
 function head(extra){return '<div style="display:flex;justify-content:flex-end;gap:10px;margin-bottom:14px">'+(extra||"")+"</div>";}
 function tbl(id,cols){return '<table id="'+id+'"><thead><tr>'+cols.map(function(c){return "<th>"+esc(c)+"</th>";}).join("")+"</tr></thead><tbody></tbody></table>";}
 function rows(id,data){var b=document.querySelector("#"+id+" tbody");b.innerHTML=data;}
 function tm(s){return s?new Date(s).toLocaleDateString()+" "+new Date(s).toLocaleTimeString():"—";}
 
+function loadPaddle(cb){if(window.Paddle&&window.Paddle.Initialized){return cb();}
+var sc=document.createElement("script");sc.src="https://cdn.paddle.com/paddle/v2/paddle.js";
+sc.onload=function(){Paddle.Environment.set("live");Paddle.Initialize({token:PADDLE_CLIENT_TOKEN,checkout:{settings:{displayMode:"overlay"}}});cb();};
+document.head.appendChild(sc);}
+window.upgrade=function(plan){var priceId=PRICES[plan];if(!priceId||!PADDLE_CLIENT_TOKEN){return toast("Checkout unavailable — client token missing.",true);}
+loadPaddle(function(){Paddle.Checkout.open({items:[{priceId:priceId,quantity:1}],customer:(ORG&&ORG.billing_email)?{email:ORG.billing_email}:undefined,customData:{organization_id:ORG.id,plan:plan}});});
+var tries=0;var iv=setInterval(function(){tries++;__api("GET","/entitlements").then(function(j){
+var hit=(j.data||[]).some(function(e){return e.plan===plan&&e.status==="active";});
+if(hit){clearInterval(iv);toast("Plan active: "+plan);go("billing");}});if(tries>40){clearInterval(iv);}},4000);};
+function vBilling(){return __api("GET","/entitlements").then(function(ent){
+var active={};(ent.data||[]).forEach(function(e){active[e.plan]=e.status;});
+var plans=[["cloud_starter","Starter","$19/mo"],["cloud_range","Range","$49/mo"],["cloud_range_pro","Range Pro","$99/mo"],["cloud_business","Business","$199/mo"],["self_hosted_range","Self-Hosted Range","$599 once"],["self_hosted_pro","Self-Hosted Pro","$999 once"],["self_hosted_multi","Multi-Location","$1,499 once"],["updates_support","Updates & Support","$149/yr"]];
+document.getElementById("body_billing").innerHTML="<p class='muted' style='margin-bottom:14px'>Pick a plan — checkout opens in a popup. Entitlements activate automatically after payment.</p>"+
+plans.map(function(p){var isA=active[p[0]]==="active";
+return "<div class='card' style='margin-bottom:12px;display:flex;justify-content:space-between;align-items:center'><div><b>"+esc(p[1])+"</b> <span class='muted'>"+esc(p[2])+"</span></div>"+
+(isA?pill("active","g"):"<button class='btn' onclick=\"upgrade('"+p[0]+"')\">Checkout</button>")+"</div>";}).join("");});}
 function vOverview(){return Promise.all([__api("GET","/customers?limit=1"),__api("GET","/templates"),__api("GET","/signing-sessions"),__api("GET","/documents")]).then(function(r){
 var cust=r[0].meta,custHasMore=cust&&cust.has_more;var docs=r[3].data||[];
 document.getElementById("body_overview").innerHTML=
