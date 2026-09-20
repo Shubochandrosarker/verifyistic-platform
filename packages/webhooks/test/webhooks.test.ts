@@ -73,7 +73,7 @@ describe("ResendEmailSender", () => {
 			"re_test_key",
 			"Verifyistic <noreply@example.com>",
 			async (url, init) => {
-				captured = { url, init };
+				captured = { url: String(url), init: init ?? {} };
 				return new Response(JSON.stringify({ id: "email_1" }), { status: 200 });
 			},
 		);
